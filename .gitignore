@@ -30,7 +30,6 @@ bam
 build server.bat
 buildlog.txt
 bam.exe
-*.bat
 .cproject
 .project
 *.dtb
