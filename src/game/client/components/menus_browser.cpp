@@ -2,10 +2,9 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <engine/config.h>
 #include <engine/friends.h>
-#include <engine/graphics.h>
 #include <engine/keys.h>
 #include <engine/serverbrowser.h>
-#include <engine/textrender.h>
+
 #include <engine/updater.h>
 #include <engine/shared/config.h>
 
@@ -14,8 +13,6 @@
 
 #include <game/localization.h>
 #include <game/version.h>
-#include <game/client/render.h>
-#include <game/client/ui.h>
 #include <game/client/components/countryflags.h>
 #include <game/client/components/console.h>
 

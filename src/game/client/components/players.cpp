@@ -12,15 +12,11 @@
 #include <game/gamecore.h> // get_angle
 #include <game/client/animstate.h>
 #include <game/client/gameclient.h>
-#include <game/client/ui.h>
-#include <game/client/render.h>
 
 #include <game/client/components/flow.h>
 #include <game/client/components/skins.h>
 #include <game/client/components/effects.h>
 #include <game/client/components/controls.h>
-
-#include <engine/textrender.h>
 
 #include "players.h"
 #include <stdio.h>
@@ -70,34 +66,13 @@ void CPlayers::Predict(
 
 	float IntraTick = Client()->IntraGameTick();
 
-
-	//float angle = 0;
-
 	if(pInfo.m_Local && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 	{
 		// just use the direct input if it's local player we are rendering
 	}
 	else
 	{
-		/*
-		float mixspeed = Client()->FrameTime()*2.5f;
-		if(player.attacktick != prev.attacktick) // shooting boosts the mixing speed
-			mixspeed *= 15.0f;
-
-		// move the delta on a constant speed on a x^2 curve
-		float current = g_GameClient.m_aClients[info.cid].angle;
-		float target = player.angle/256.0f;
-		float delta = angular_distance(current, target);
-		float sign = delta < 0 ? -1 : 1;
-		float new_delta = delta - 2*mixspeed*sqrt(delta*sign)*sign + mixspeed*mixspeed;
-
-		// make sure that it doesn't vibrate when it's still
-		if(fabs(delta) < 2/256.0f)
-			angle = target;
-		else
-			angle = angular_approach(current, target, fabs(delta-new_delta));
-
-		g_GameClient.m_aClients[info.cid].angle = angle;*/
+		
 	}
 
 vec2 NonPredPos = mix(vec2(Prev.m_X, Prev.m_Y), vec2(Player.m_X, Player.m_Y), IntraTick);

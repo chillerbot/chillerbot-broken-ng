@@ -3,37 +3,11 @@
 #ifndef ENGINE_CLIENT_CLIENT_H
 #define ENGINE_CLIENT_CLIENT_H
 
-class CGraph
-{
-public:
-	enum
-	{
-		// restrictions: Must be power of two
-		MAX_VALUES=128,
-	};
-
-	float m_Min, m_Max;
-	float m_aValues[MAX_VALUES];
-	float m_aColors[MAX_VALUES][3];
-	int m_Index;
-
-	void Init(float Min, float Max);
-
-	void ScaleMax();
-	void ScaleMin();
-
-	void Add(float v, float r, float g, float b);
-	void Render(IGraphics *pGraphics, int Font, float x, float y, float w, float h, const char *pDescription);
-};
-
-
 class CSmoothTime
 {
 	int64 m_Snap;
 	int64 m_Current;
 	int64 m_Target;
-
-	CGraph m_Graph;
 
 	int m_SpikeCounter;
 
@@ -45,7 +19,7 @@ public:
 	int64 Get(int64 Now);
 
 	void UpdateInt(int64 Target);
-	void Update(CGraph *pGraph, int64 Target, int TimeLeft, int AdjustDirection);
+	void Update(int64 Target, int TimeLeft, int AdjustDirection);
 };
 
 
@@ -146,11 +120,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	bool m_LastDummy;
 	bool m_LastDummy2;
 	CNetObj_PlayerInput HammerInput;
-
-	// graphs
-	CGraph m_InputtimeMarginGraph;
-	CGraph m_GametimeMarginGraph;
-	CGraph m_FpsGraph;
 
 	// the game snapshots are modifiable by the game
 	class CSnapshotStorage m_SnapshotStorage[2];

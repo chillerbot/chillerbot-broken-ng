@@ -68,99 +68,6 @@
 #undef main
 #endif
 
-void CGraph::Init(float Min, float Max)
-{
-	m_Min = Min;
-	m_Max = Max;
-	m_Index = 0;
-}
-
-void CGraph::ScaleMax()
-{
-	int i = 0;
-	m_Max = 0;
-	for(i = 0; i < MAX_VALUES; i++)
-	{
-		if(m_aValues[i] > m_Max)
-			m_Max = m_aValues[i];
-	}
-}
-
-void CGraph::ScaleMin()
-{
-	int i = 0;
-	m_Min = m_Max;
-	for(i = 0; i < MAX_VALUES; i++)
-	{
-		if(m_aValues[i] < m_Min)
-			m_Min = m_aValues[i];
-	}
-}
-
-void CGraph::Add(float v, float r, float g, float b)
-{
-	m_Index = (m_Index+1)&(MAX_VALUES-1);
-	m_aValues[m_Index] = v;
-	m_aColors[m_Index][0] = r;
-	m_aColors[m_Index][1] = g;
-	m_aColors[m_Index][2] = b;
-}
-
-void CGraph::Render(IGraphics *pGraphics, int Font, float x, float y, float w, float h, const char *pDescription)
-{
-	//m_pGraphics->BlendNormal();
-
-
-	pGraphics->TextureSet(-1);
-
-	pGraphics->QuadsBegin();
-	pGraphics->SetColor(0, 0, 0, 0.75f);
-	IGraphics::CQuadItem QuadItem(x, y, w, h);
-	pGraphics->QuadsDrawTL(&QuadItem, 1);
-	pGraphics->QuadsEnd();
-
-	pGraphics->LinesBegin();
-	pGraphics->SetColor(0.95f, 0.95f, 0.95f, 1.00f);
-	IGraphics::CLineItem LineItem(x, y+h/2, x+w, y+h/2);
-	pGraphics->LinesDraw(&LineItem, 1);
-	pGraphics->SetColor(0.5f, 0.5f, 0.5f, 0.75f);
-	IGraphics::CLineItem Array[2] = {
-		IGraphics::CLineItem(x, y+(h*3)/4, x+w, y+(h*3)/4),
-		IGraphics::CLineItem(x, y+h/4, x+w, y+h/4)};
-	pGraphics->LinesDraw(Array, 2);
-	for(int i = 1; i < MAX_VALUES; i++)
-	{
-		float a0 = (i-1)/(float)MAX_VALUES;
-		float a1 = i/(float)MAX_VALUES;
-		int i0 = (m_Index+i-1)&(MAX_VALUES-1);
-		int i1 = (m_Index+i)&(MAX_VALUES-1);
-
-		float v0 = (m_aValues[i0]-m_Min) / (m_Max-m_Min);
-		float v1 = (m_aValues[i1]-m_Min) / (m_Max-m_Min);
-
-		IGraphics::CColorVertex Array[2] = {
-			IGraphics::CColorVertex(0, m_aColors[i0][0], m_aColors[i0][1], m_aColors[i0][2], 0.75f),
-			IGraphics::CColorVertex(1, m_aColors[i1][0], m_aColors[i1][1], m_aColors[i1][2], 0.75f)};
-		pGraphics->SetColorVertex(Array, 2);
-		IGraphics::CLineItem LineItem(x+a0*w, y+h-v0*h, x+a1*w, y+h-v1*h);
-		pGraphics->LinesDraw(&LineItem, 1);
-
-	}
-	pGraphics->LinesEnd();
-
-	pGraphics->TextureSet(Font);
-	pGraphics->QuadsBegin();
-	pGraphics->QuadsText(x+2, y+h-16, 16, pDescription);
-
-	char aBuf[32];
-	str_format(aBuf, sizeof(aBuf), "%.2f", m_Max);
-	pGraphics->QuadsText(x+w-8*str_length(aBuf)-8, y+2, 16, aBuf);
-
-	str_format(aBuf, sizeof(aBuf), "%.2f", m_Min);
-	pGraphics->QuadsText(x+w-8*str_length(aBuf)-8, y+h-16, 16, aBuf);
-	pGraphics->QuadsEnd();
-}
-
 
 void CSmoothTime::Init(int64 Target)
 {
@@ -169,7 +76,6 @@ void CSmoothTime::Init(int64 Target)
 	m_Target = Target;
 	m_aAdjustSpeed[0] = 0.3f;
 	m_aAdjustSpeed[1] = 0.3f;
-	m_Graph.Init(0.0f, 0.5f);
 }
 
 void CSmoothTime::SetAdjustSpeed(int Direction, float Value)
@@ -195,8 +101,6 @@ int64 CSmoothTime::Get(int64 Now)
 
 	int64 r = c + (int64)((t-c)*a);
 
-	m_Graph.Add(a+0.5f,1,1,1);
-
 	return r;
 }
 
@@ -208,7 +112,7 @@ void CSmoothTime::UpdateInt(int64 Target)
 	m_Target = Target;
 }
 
-void CSmoothTime::Update(CGraph *pGraph, int64 Target, int TimeLeft, int AdjustDirection)
+void CSmoothTime::Update(int64 Target, int TimeLeft, int AdjustDirection)
 {
 	int UpdateTimer = 1;
 
@@ -228,11 +132,9 @@ void CSmoothTime::Update(CGraph *pGraph, int64 Target, int TimeLeft, int AdjustD
 		{
 			// ignore this ping spike
 			UpdateTimer = 0;
-			pGraph->Add(TimeLeft, 1,1,0);
 		}
 		else
 		{
-			pGraph->Add(TimeLeft, 1,0,0);
 			if(m_aAdjustSpeed[AdjustDirection] < 30.0f)
 				m_aAdjustSpeed[AdjustDirection] *= 2.0f;
 		}
@@ -241,8 +143,6 @@ void CSmoothTime::Update(CGraph *pGraph, int64 Target, int TimeLeft, int AdjustD
 	{
 		if(m_SpikeCounter)
 			m_SpikeCounter--;
-
-		pGraph->Add(TimeLeft, 0,1,0);
 
 		m_aAdjustSpeed[AdjustDirection] *= 0.95f;
 		if(m_aAdjustSpeed[AdjustDirection] < 2.0f)
@@ -706,9 +606,6 @@ void CClient::Connect(const char *pAddress)
 	for(int i = 0; i < RECORDER_MAX; i++)
 		if(m_DemoRecorder[i].IsRecording())
 			DemoRecorder_Stop(i);
-
-	m_InputtimeMarginGraph.Init(-150.0f, 150.0f);
-	m_GametimeMarginGraph.Init(-150.0f, 150.0f);
 }
 
 void CClient::DisconnectWithReason(const char *pReason)
@@ -925,93 +822,7 @@ void CClient::SnapSetStaticsize(int ItemType, int Size)
 
 void CClient::DebugRender()
 {
-	static NETSTATS Prev, Current;
-	static int64 LastSnap = 0;
-	static float FrameTimeAvg = 0;
-	char aBuffer[512];
 
-	if(!g_Config.m_Debug)
-		return;
-
-	//m_pGraphics->BlendNormal();
-	Graphics()->TextureSet(m_DebugFont);
-	Graphics()->MapScreen(0,0,Graphics()->ScreenWidth(),Graphics()->ScreenHeight());
-	Graphics()->QuadsBegin();
-
-	if(time_get()-LastSnap > time_freq())
-	{
-		LastSnap = time_get();
-		Prev = Current;
-		net_stats(&Current);
-	}
-
-	/*
-		eth = 14
-		ip = 20
-		udp = 8
-		total = 42
-	*/
-	FrameTimeAvg = FrameTimeAvg*0.9f + m_RenderFrameTime*0.1f;
-	str_format(aBuffer, sizeof(aBuffer), "ticks: %8d %8d mem %dk %d gfxmem: %dk fps: %3d",
-		m_CurGameTick[g_Config.m_ClDummy], m_PredTick[g_Config.m_ClDummy],
-		mem_stats()->allocated/1024,
-		mem_stats()->total_allocations,
-		Graphics()->MemoryUsage()/1024,
-		(int)(1.0f/FrameTimeAvg + 0.5f));
-	Graphics()->QuadsText(2, 2, 16, aBuffer);
-
-
-	{
-		int SendPackets = (Current.sent_packets-Prev.sent_packets);
-		int SendBytes = (Current.sent_bytes-Prev.sent_bytes);
-		int SendTotal = SendBytes + SendPackets*42;
-		int RecvPackets = (Current.recv_packets-Prev.recv_packets);
-		int RecvBytes = (Current.recv_bytes-Prev.recv_bytes);
-		int RecvTotal = RecvBytes + RecvPackets*42;
-
-		if(!SendPackets) SendPackets++;
-		if(!RecvPackets) RecvPackets++;
-		str_format(aBuffer, sizeof(aBuffer), "send: %3d %5d+%4d=%5d (%3d kbps) avg: %5d\nrecv: %3d %5d+%4d=%5d (%3d kbps) avg: %5d",
-			SendPackets, SendBytes, SendPackets*42, SendTotal, (SendTotal*8)/1024, SendBytes/SendPackets,
-			RecvPackets, RecvBytes, RecvPackets*42, RecvTotal, (RecvTotal*8)/1024, RecvBytes/RecvPackets);
-		Graphics()->QuadsText(2, 14, 16, aBuffer);
-	}
-
-	// render rates
-	{
-		int y = 0;
-		int i;
-		for(i = 0; i < 256; i++)
-		{
-			if(m_SnapshotDelta.GetDataRate(i))
-			{
-				str_format(aBuffer, sizeof(aBuffer), "%4d %20s: %8d %8d %8d", i, GameClient()->GetItemName(i), m_SnapshotDelta.GetDataRate(i)/8, m_SnapshotDelta.GetDataUpdates(i),
-					(m_SnapshotDelta.GetDataRate(i)/m_SnapshotDelta.GetDataUpdates(i))/8);
-				Graphics()->QuadsText(2, 100+y*12, 16, aBuffer);
-				y++;
-			}
-		}
-	}
-
-	str_format(aBuffer, sizeof(aBuffer), "pred: %d ms", GetPredictionTime());
-	Graphics()->QuadsText(2, 70, 16, aBuffer);
-	Graphics()->QuadsEnd();
-
-	// render graphs
-	if(g_Config.m_DbgGraphs)
-	{
-		//Graphics()->MapScreen(0,0,400.0f,300.0f);
-		float w = Graphics()->ScreenWidth()/4.0f;
-		float h = Graphics()->ScreenHeight()/6.0f;
-		float sp = Graphics()->ScreenWidth()/100.0f;
-		float x = Graphics()->ScreenWidth()-w-sp;
-
-		m_FpsGraph.ScaleMax();
-		m_FpsGraph.ScaleMin();
-		m_FpsGraph.Render(Graphics(), m_DebugFont, x, sp*5, w, h, "FPS");
-		m_InputtimeMarginGraph.Render(Graphics(), m_DebugFont, x, sp*5+h+sp, w, h, "Prediction Margin");
-		m_GametimeMarginGraph.Render(Graphics(), m_DebugFont, x, sp*5+h+sp+h+sp, w, h, "Gametime Margin");
-	}
 }
 
 void CClient::Restart()
@@ -1666,7 +1477,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 			}
 
 			if(Target)
-				m_PredictedTime.Update(&m_InputtimeMarginGraph, Target, TimeLeft, 1);
+				m_PredictedTime.Update(Target, TimeLeft, 1);
 		}
 		else if(Msg == NETMSG_SNAP || Msg == NETMSG_SNAPSINGLE || Msg == NETMSG_SNAPEMPTY)
 		{
@@ -1862,7 +1673,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 						int64 Now = m_GameTime[g_Config.m_ClDummy].Get(time_get());
 						int64 TickStart = GameTick*time_freq()/50;
 						int64 TimeLeft = (TickStart-Now)*1000 / time_freq();
-						m_GameTime[g_Config.m_ClDummy].Update(&m_GametimeMarginGraph, (GameTick-1)*time_freq()/50, TimeLeft, 0);
+						m_GameTime[g_Config.m_ClDummy].Update((GameTick-1)*time_freq()/50, TimeLeft, 0);
 					}
 
 					if(m_ReceivedSnapshots[g_Config.m_ClDummy] > 50 && !m_TimeoutCodeSent[g_Config.m_ClDummy])
@@ -2099,7 +1910,7 @@ void CClient::ProcessServerPacketDummy(CNetChunk *pPacket)
 						int64 Now = m_GameTime[!g_Config.m_ClDummy].Get(time_get());
 						int64 TickStart = GameTick*time_freq()/50;
 						int64 TimeLeft = (TickStart-Now)*1000 / time_freq();
-						m_GameTime[!g_Config.m_ClDummy].Update(&m_GametimeMarginGraph, (GameTick-1)*time_freq()/50, TimeLeft, 0);
+						m_GameTime[!g_Config.m_ClDummy].Update((GameTick-1)*time_freq()/50, TimeLeft, 0);
 					}
 
 					// ack snapshot
@@ -2637,14 +2448,12 @@ void CClient::Run()
 	m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "client", aBuf);
 
 	// connect to the server if wanted
-	/*
-	if(config.cl_connect[0] != 0)
-		Connect(config.cl_connect);
-	config.cl_connect[0] = 0;
-	*/
+	if(g_Config.m_ClConnect[0] != 0)
+		Connect(g_Config.m_ClConnect);
+	//g_Config.cl_connect[0] = 0;
+	
 
 	//
-	m_FpsGraph.Init(0.0f, 200.0f);
 
 	// process pending commands
 	m_pConsole->StoreCommands(false);
@@ -2736,7 +2545,6 @@ void CClient::Run()
 					m_RenderFrameTimeLow = m_RenderFrameTime;
 				if(m_RenderFrameTime > m_RenderFrameTimeHigh)
 					m_RenderFrameTimeHigh = m_RenderFrameTime;
-				m_FpsGraph.Add(1.0f/m_RenderFrameTime, 1,1,1);
 
 				m_LastRenderTime = Now;
 
@@ -3383,7 +3191,8 @@ int main(int argc, const char **argv) // ignore_convention
 	if(File)
 	{
 		io_close(File);
-		pConsole->ExecuteFile(CONFIG_FILE);
+		//pConsole->ExecuteFile(CONFIG_FILE);
+		pConsole->ExecuteFile("chillerbot.cfg");
 	}
 	else // fallback
 	{
@@ -3432,7 +3241,7 @@ int main(int argc, const char **argv) // ignore_convention
 	pClient->Run();
 
 	// write down the config and quit
-	pConfig->Save();
+	//pConfig->Save();
 
 	return 0;
 }

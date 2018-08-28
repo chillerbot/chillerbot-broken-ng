@@ -41,7 +41,6 @@
 #include "components/items.h"
 #include "components/killmessages.h"
 #include "components/mapimages.h"
-#include "components/maplayers.h"
 #include "components/menus.h"
 #include "components/motd.h"
 #include "components/particles.h"
@@ -89,8 +88,6 @@ static CNamePlates gs_NamePlates;
 static CItems gs_Items;
 static CMapImages gs_MapImages;
 
-static CMapLayers gs_MapLayersBackGround(CMapLayers::TYPE_BACKGROUND);
-static CMapLayers gs_MapLayersForeGround(CMapLayers::TYPE_FOREGROUND);
 static CBackground gs_BackGround;
 
 
@@ -149,8 +146,6 @@ void CGameClient::OnConsoleInit()
 	m_pScoreboard = &::gs_Scoreboard;
 	m_pStatboard = &::gs_Statboard;
 	m_pItems = &::gs_Items;
-	m_pMapLayersBackGround = &::gs_MapLayersBackGround;
-	m_pMapLayersForeGround = &::gs_MapLayersForeGround;
 	m_pBackGround = &::gs_BackGround;
 
 	m_pRaceDemo = &::gs_RaceDemo;
@@ -170,12 +165,10 @@ void CGameClient::OnConsoleInit()
 	m_All.Add(m_pRaceDemo);
 
 	m_All.Add(&gs_BackGround);	//render instead of gs_MapLayersBackGround when g_Config.m_ClOverlayEntities == 100
-	m_All.Add(&gs_MapLayersBackGround); // first to render
 	m_All.Add(&m_pParticles->m_RenderTrail);
 	m_All.Add(m_pItems);
 	m_All.Add(&gs_Players);
 	m_All.Add(m_pGhost);
-	m_All.Add(&gs_MapLayersForeGround);
 	m_All.Add(&m_pParticles->m_RenderExplosions);
 	m_All.Add(&gs_NamePlates);
 	m_All.Add(&m_pParticles->m_RenderGeneral);

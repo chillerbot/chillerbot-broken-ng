@@ -14,11 +14,9 @@
 #include <engine/config.h>
 #include <engine/engine.h>
 #include <engine/friends.h>
-#include <engine/graphics.h>
 #include <engine/keys.h>
 #include <engine/serverbrowser.h>
 #include <engine/storage.h>
-#include <engine/textrender.h>
 #include <engine/shared/config.h>
 
 #include <game/version.h>
@@ -27,7 +25,6 @@
 #include <game/generated/client_data.h>
 #include <game/client/gameclient.h>
 #include <game/client/lineinput.h>
-#include <game/localization.h>
 #include <mastersrv/mastersrv.h>
 #include <versionsrv/versionsrv.h>
 
@@ -36,7 +33,6 @@
 #include "skins.h"
 #include "controls.h"
 
-vec4 CMenus::ms_GuiColor;
 vec4 CMenus::ms_ColorTabbarInactiveOutgame;
 vec4 CMenus::ms_ColorTabbarActiveOutgame;
 vec4 CMenus::ms_ColorTabbarInactive;
