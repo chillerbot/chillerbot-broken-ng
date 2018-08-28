@@ -18,7 +18,6 @@
 
 #include <game/localization.h>
 #include <game/version.h>
-#include "render.h"
 
 #include "gameclient.h"
 

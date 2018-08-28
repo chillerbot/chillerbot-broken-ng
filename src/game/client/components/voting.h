@@ -7,7 +7,6 @@
 
 #include <game/voting.h>
 #include <game/client/component.h>
-#include <game/client/ui.h>
 
 class CVoting : public CComponent
 {
@@ -39,8 +38,6 @@ public:
 	virtual void OnConsoleInit();
 	virtual void OnMessage(int Msgtype, void *pRawMsg);
 	virtual void OnRender();
-
-	void RenderBars(CUIRect Bars, bool Text);
 
 	void CallvoteSpectate(int ClientID, const char *pReason, bool ForceVote = false);
 	void CallvoteKick(int ClientID, const char *pReason, bool ForceVote = false);

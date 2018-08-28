@@ -61,7 +61,6 @@
 
 #include <zlib.h>
 
-#include "SDL.h"
 #ifdef main
 #undef main
 #endif
@@ -2362,17 +2361,6 @@ void CClient::Run()
 
 	srand(time(NULL));
 
-	// init SDL
-	{
-		if(SDL_Init(0) < 0)
-		{
-			dbg_msg("client", "unable to init SDL base: %s", SDL_GetError());
-			return;
-		}
-
-		atexit(SDL_Quit); // ignore_convention
-	}
-
 
 	// open socket
 	{
@@ -2558,11 +2546,6 @@ void CClient::Run()
 
 	GameClient()->OnShutdown();
 	Disconnect();
-
-	// shutdown SDL
-	{
-		SDL_Quit();
-	}
 }
 
 bool CClient::CtrlShiftKey(int Key, bool &Last)
@@ -2971,11 +2954,6 @@ void CClient::RegisterCommands()
 	m_pConsole->Chain("br_filter_gametype", ConchainServerBrowserUpdate, this);
 	m_pConsole->Chain("br_filter_serveraddress", ConchainServerBrowserUpdate, this);
 
-	m_pConsole->Chain("gfx_screen", ConchainWindowScreen, this);
-	m_pConsole->Chain("gfx_fullscreen", ConchainFullscreen, this);
-	m_pConsole->Chain("gfx_borderless", ConchainWindowBordered, this);
-	m_pConsole->Chain("gfx_vsync", ConchainWindowVSync, this);
-
 	// DDRace
 
 
@@ -3002,25 +2980,8 @@ static CClient *CreateClient()
 		Upstream latency
 */
 
-#if defined(CONF_PLATFORM_MACOSX) || defined(__ANDROID__)
-extern "C" int SDL_main(int argc, char **argv_) // ignore_convention
-{
-	const char **argv = const_cast<const char **>(argv_);
-#else
 int main(int argc, const char **argv) // ignore_convention
 {
-#endif
-#if defined(CONF_FAMILY_WINDOWS)
-	for(int i = 1; i < argc; i++) // ignore_convention
-	{
-		if(str_comp("-s", argv[i]) == 0 || str_comp("--silent", argv[i]) == 0) // ignore_convention
-		{
-			FreeConsole();
-			break;
-		}
-	}
-#endif
-
 #if !defined(CONF_PLATFORM_MACOSX)
 	dbg_enable_threaded();
 #endif
@@ -3129,7 +3090,7 @@ int main(int argc, const char **argv) // ignore_convention
 #endif
 
 	// For XOpenIM in SDL2: https://bugzilla.libsdl.org/show_bug.cgi?id=3102
-	setlocale(LC_ALL, "");
+	//setlocale(LC_ALL, "");
 
 	// run the client
 	dbg_msg("client", "starting...");

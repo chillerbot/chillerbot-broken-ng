@@ -21,13 +21,8 @@
 #include "menus.h"
 
 
-void CMenus::RenderServerbrowserServerList(CUIRect View)
+void CMenus::RenderServerbrowserServerList()
 {
-	CUIRect Headers;
-	CUIRect Status;
-
-	View.HSplitTop(ms_ListheaderHeight, &Headers, &View);
-	View.HSplitBottom(28.0f, &View, &Status);
 
 	struct CColumn
 	{
@@ -37,8 +32,6 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 		int m_Direction;
 		float m_Width;
 		int m_Flags;
-		CUIRect m_Rect;
-		CUIRect m_Spacer;
 	};
 
 	enum
@@ -57,18 +50,15 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 	};
 
 	CColumn s_aCols[] = {
-		{-1,			-1,						" ",		-1, 2.0f, 0, {0}, {0}},
-		{COL_FLAG_LOCK,	-1,						" ",		-1, 14.0f, 0, {0}, {0}},
-		{COL_FLAG_FAV,	-1,						" ",		-1, 14.0f, 0, {0}, {0}},
-		{COL_NAME,		IServerBrowser::SORT_NAME,		"Name",		0, 50.0f, 0, {0}, {0}},	// Localize - these strings are localized within CLocConstString
-		{COL_GAMETYPE,	IServerBrowser::SORT_GAMETYPE,	"Type",		1, 50.0f, 0, {0}, {0}},
-		{COL_MAP,		IServerBrowser::SORT_MAP,			"Map", 		1, 100.0f + (Headers.w - 480) / 8, 0, {0}, {0}},
-		{COL_PLAYERS,	IServerBrowser::SORT_NUMPLAYERS,	"Players",	1, 60.0f, 0, {0}, {0}},
-		{-1,			-1,						" ",		1, 10.0f, 0, {0}, {0}},
-		{COL_PING,		IServerBrowser::SORT_PING,		"Ping",		1, 40.0f, FIXED, {0}, {0}},
-#if defined(__ANDROID__)
-		{-1,			-1,						" ",		1, 50.0f, 0, {0}, {0}}, // Scrollbar
-#endif
+		{-1,			-1,						" ",		-1, 2.0f, 0},
+		{COL_FLAG_LOCK,	-1,						" ",		-1, 14.0f, 0},
+		{COL_FLAG_FAV,	-1,						" ",		-1, 14.0f, 0},
+		{COL_NAME,		IServerBrowser::SORT_NAME,		"Name",		0, 50.0f, 0},	// Localize - these strings are localized within CLocConstString
+		{COL_GAMETYPE,	IServerBrowser::SORT_GAMETYPE,	"Type",		1, 50.0f, 0},
+		{COL_MAP,		IServerBrowser::SORT_MAP,			"Map", 		1, 100.0f + (480) / 8, 0},
+		{COL_PLAYERS,	IServerBrowser::SORT_NUMPLAYERS,	"Players",	1, 60.0f, 0},
+		{-1,			-1,						" ",		1, 10.0f, 0},
+		{COL_PING,		IServerBrowser::SORT_PING,		"Ping",		1, 40.0f, FIXED},
 	};
 	// This is just for scripts/update_localization.py to work correctly (all other strings are already Localize()'d somewhere else). Don't remove!
 	// Localize("Type");
@@ -80,12 +70,10 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 	{
 		if(s_aCols[i].m_Direction == -1)
 		{
-			Headers.VSplitLeft(s_aCols[i].m_Width, &s_aCols[i].m_Rect, &Headers);
 
 			if(i+1 < NumCols)
 			{
 				//Cols[i].flags |= SPACER;
-				Headers.VSplitLeft(2, &s_aCols[i].m_Spacer, &Headers);
 			}
 		}
 	}
@@ -94,51 +82,17 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 	{
 		if(s_aCols[i].m_Direction == 1)
 		{
-			Headers.VSplitRight(s_aCols[i].m_Width, &Headers, &s_aCols[i].m_Rect);
-			Headers.VSplitRight(2, &Headers, &s_aCols[i].m_Spacer);
 		}
 	}
 
 	for(int i = 0; i < NumCols; i++)
 	{
-		if(s_aCols[i].m_Direction == 0)
-			s_aCols[i].m_Rect = Headers;
-	}
-
-	// do headers
-	for(int i = 0; i < NumCols; i++)
-	{
-		if(DoButton_GridHeader(s_aCols[i].m_Caption, s_aCols[i].m_Caption, g_Config.m_BrSort == s_aCols[i].m_Sort, &s_aCols[i].m_Rect))
+		if (s_aCols[i].m_Direction == 0)
 		{
-			if(s_aCols[i].m_Sort != -1)
-			{
-				if(g_Config.m_BrSort == s_aCols[i].m_Sort)
-					g_Config.m_BrSortOrder ^= 1;
-				else
-					g_Config.m_BrSortOrder = 0;
-				g_Config.m_BrSort = s_aCols[i].m_Sort;
-			}
 		}
 	}
-
-	CUIRect Scroll;
-#if defined(__ANDROID__)
-	View.VSplitRight(50, &View, &Scroll);
-#else
-	View.VSplitRight(15, &View, &Scroll);
-#endif
 
 	int NumServers = ServerBrowser()->NumSortedServers();
-
-	int Num = (int)(View.h/s_aCols[0].m_Rect.h) + 1;
-	static int s_ScrollBar = 0;
-	static float s_ScrollValue = 0;
-
-	Scroll.HMargin(5.0f, &Scroll);
-	s_ScrollValue = DoScrollbarV(&s_ScrollBar, &Scroll, s_ScrollValue);
-
-	int ScrollNum = NumServers-Num+1;
-	ScrollNum = 0;
 
 	if(m_SelectedIndex > -1)
 	{
@@ -152,22 +106,7 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 			}
 			if(NewIndex > -1 && NewIndex < NumServers)
 			{
-				//scroll
-				float IndexY = View.y - s_ScrollValue*ScrollNum*s_aCols[0].m_Rect.h + NewIndex*s_aCols[0].m_Rect.h;
-				int Scroll = View.y > IndexY ? -1 : View.y+View.h < IndexY+s_aCols[0].m_Rect.h ? 1 : 0;
-				if(Scroll)
-				{
-					if(Scroll < 0)
-					{
-						int NumScrolls = (View.y-IndexY+s_aCols[0].m_Rect.h-1.0f)/s_aCols[0].m_Rect.h;
-						s_ScrollValue -= (1.0f/ScrollNum)*NumScrolls;
-					}
-					else
-					{
-						int NumScrolls = (IndexY+s_aCols[0].m_Rect.h-(View.y+View.h)+s_aCols[0].m_Rect.h-1.0f)/s_aCols[0].m_Rect.h;
-						s_ScrollValue += (1.0f/ScrollNum)*NumScrolls;
-					}
-				}
+
 
 				m_SelectedIndex = NewIndex;
 
@@ -176,9 +115,6 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 			}
 		}
 	}
-
-	if(s_ScrollValue < 0) s_ScrollValue = 0;
-	if(s_ScrollValue > 1) s_ScrollValue = 1;
 
 #if defined(__ANDROID__)
 	int DoubleClicked = 0;
@@ -193,13 +129,8 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 		int ItemIndex = i;
 		const CServerInfo *pItem = ServerBrowser()->SortedGet(ItemIndex);
 		NumPlayers += g_Config.m_BrFilterSpectators ? pItem->m_NumPlayers : pItem->m_NumClients;
-		CUIRect Row;
-		CUIRect SelectHitBox;
 
 		int Selected = str_comp(pItem->m_aAddress, g_Config.m_UiServerAddress) == 0; //selected_index==ItemIndex;
-
-		View.HSplitTop(ms_ListheaderHeight, &Row, &View);
-		SelectHitBox = Row;
 
 		if(Selected)
 			m_SelectedIndex = i;
@@ -229,12 +160,7 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 
 		for(int c = 0; c < NumCols; c++)
 		{
-			CUIRect Button;
 			char aTemp[64];
-			Button.x = s_aCols[c].m_Rect.x;
-			Button.y = Row.y;
-			Button.h = Row.h;
-			Button.w = s_aCols[c].m_Rect.w;
 
 			int ID = s_aCols[c].m_ID;
 
@@ -276,15 +202,6 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 			}
 			else if(ID == COL_PLAYERS)
 			{
-				CUIRect Icon;
-				Button.VMargin(4.0f, &Button);
-				if(pItem->m_FriendState != IFriends::FRIEND_NO)
-				{
-					Button.VSplitLeft(Button.h, &Icon, &Button);
-					Icon.Margin(2.0f, &Icon);
-					DoButton_Icon(IMAGE_BROWSEICONS, SPRITE_BROWSE_HEART, &Icon);
-				}
-
 				if(g_Config.m_BrFilterSpectators)
 					str_format(aTemp, sizeof(aTemp), "%i/%i", pItem->m_NumPlayers, pItem->m_MaxPlayers);
 				else
@@ -335,16 +252,6 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 	str_format(aBuf, sizeof(aBuf), Localize("%d of %d servers, %d players"), ServerBrowser()->NumSortedServers(), ServerBrowser()->NumServers(), NumPlayers);
 }
 
-void CMenus::RenderServerbrowserFilters(CUIRect View)
-{
-
-}
-
-void CMenus::RenderServerbrowserServerDetail(CUIRect View)
-{
-
-}
-
 void CMenus::FriendlistOnUpdate()
 {
 	m_lFriends.clear();
@@ -356,25 +263,6 @@ void CMenus::FriendlistOnUpdate()
 		m_lFriends.add_unsorted(Item);
 	}
 	m_lFriends.sort_range();
-}
-
-void CMenus::RenderServerbrowserFriends(CUIRect View)
-{
-
-}
-
-void CMenus::RenderServerbrowser(CUIRect MainView)
-{
-	/*
-		+-----------------+	+-------+
-		|				  |	|		|
-		|				  |	| tool	|
-		|   server list	  |	| box 	|
-		|				  |	|	  	|
-		|				  |	|		|
-		+-----------------+	|	 	|
-			status box	tab	+-------+
-	*/
 }
 
 void CMenus::ConchainFriendlistUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)

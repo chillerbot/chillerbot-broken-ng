@@ -7,7 +7,6 @@
 
 #include <game/gamecore.h> // get_angle
 #include <game/client/gameclient.h>
-#include <game/client/render.h>
 
 #include <game/client/components/effects.h>
 

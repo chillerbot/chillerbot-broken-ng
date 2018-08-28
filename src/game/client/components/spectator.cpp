@@ -7,7 +7,6 @@
 #include <game/generated/protocol.h>
 
 #include <game/client/animstate.h>
-#include <game/client/render.h>
 
 #include "spectator.h"
 

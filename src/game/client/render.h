@@ -5,8 +5,6 @@
 
 #include <base/vmath.h>
 #include <game/mapitems.h>
-#include "ui.h"
-
 
 class CTeeRenderInfo
 {
@@ -44,9 +42,6 @@ typedef void (*ENVELOPE_EVAL)(float TimeOffset, int Env, float *pChannels, void 
 class CRenderTools
 {
 public:
-	class CUI *m_pUI;
-
-	class CUI *UI() const { return m_pUI; }
 
 	//typedef struct SPRITE;
 
@@ -58,8 +53,6 @@ public:
 	// rects
 	void DrawRoundRect(float x, float y, float w, float h, float r);
 	void DrawRoundRectExt(float x, float y, float w, float h, float r, int Corners);
-
-	void DrawUIRect(const CUIRect *pRect, vec4 Color, int Corners, float Rounding);
 
 	void DrawCircle(float x, float y, float r, int Segments);
 

@@ -96,7 +96,6 @@ class CGameClient : public IGameClient
 
 	CLayers m_Layers;
 	class CCollision m_Collision;
-	CUI m_UI;
 
 	void ProcessEvents();
 	void UpdatePositions();
@@ -122,14 +121,12 @@ public:
 	IKernel *Kernel() { return IInterface::Kernel(); }
 	IEngine *Engine() const { return m_pEngine; }
 	class IClient *Client() const { return m_pClient; }
-	class CUI *UI() { return &m_UI; }
 	class IInput *Input() const { return m_pInput; }
 	class IStorage *Storage() const { return m_pStorage; }
 	class IConsole *Console() { return m_pConsole; }
 	class IDemoPlayer *DemoPlayer() const { return m_pDemoPlayer; }
 	class IDemoRecorder *DemoRecorder(int Recorder) const { return Client()->DemoRecorder(Recorder); }
 	class IServerBrowser *ServerBrowser() const { return m_pServerBrowser; }
-	class CRenderTools *RenderTools() { return &m_RenderTools; }
 	class CLayers *Layers() { return &m_Layers; };
 	class CCollision *Collision() { return &m_Collision; };
 	class IFriends *Friends() { return m_pFriends; }
@@ -275,8 +272,6 @@ public:
 	};
 
 	CClientStats m_aStats[MAX_CLIENTS];
-
-	CRenderTools m_RenderTools;
 
 	void OnReset();
 

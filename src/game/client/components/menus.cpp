@@ -88,90 +88,6 @@ vec4 CMenus::ButtonColorMul(const void *pID)
 	return vec4(1,1,1,1);
 }
 
-int CMenus::DoButton_Icon(int ImageId, int SpriteId, const CUIRect *pRect)
-{
-	return 0;
-}
-
-int CMenus::DoButton_Toggle(const void *pID, int Checked, const CUIRect *pRect, bool Active)
-{
-	return 0;
-}
-
-int CMenus::DoButton_Menu(const void *pID, const char *pText, int Checked, const CUIRect *pRect)
-{
-	return 0;
-}
-
-void CMenus::DoButton_KeySelect(const void *pID, const char *pText, int Checked, const CUIRect *pRect)
-{
-
-}
-
-int CMenus::DoButton_MenuTab(const void *pID, const char *pText, int Checked, const CUIRect *pRect, int Corners)
-{
-	return 0;
-}
-
-int CMenus::DoButton_GridHeader(const void *pID, const char *pText, int Checked, const CUIRect *pRect)
-{
-	return 0;
-}
-
-int CMenus::DoButton_CheckBox_Common(const void *pID, const char *pText, const char *pBoxText, const CUIRect *pRect)
-{
-	return 0;
-}
-
-int CMenus::DoButton_CheckBox(const void *pID, const char *pText, int Checked, const CUIRect *pRect)
-{
-	return 0;
-}
-
-
-int CMenus::DoButton_CheckBox_Number(const void *pID, const char *pText, int Checked, const CUIRect *pRect)
-{
-	return 0;
-}
-
-int CMenus::DoEditBox(void *pID, const CUIRect *pRect, char *pStr, unsigned StrSize, float FontSize, float *Offset, bool Hidden, int Corners, const char *pEmptyText)
-{
-	return 0;
-}
-
-float CMenus::DoScrollbarV(const void *pID, const CUIRect *pRect, float Current)
-{
-	return 0.0f;
-}
-
-
-
-float CMenus::DoScrollbarH(const void *pID, const CUIRect *pRect, float Current)
-{
-	return 0.0f;
-}
-
-int CMenus::DoKeyReader(void *pID, const CUIRect *pRect, int Key)
-{
-	return 0;
-}
-
-
-int CMenus::RenderMenubar(CUIRect r)
-{
-	return 0;
-}
-
-void CMenus::RenderLoading()
-{
-
-}
-
-void CMenus::RenderNews(CUIRect MainView)
-{
-
-}
-
 void CMenus::OnInit()
 {
 	g_Config.m_ClShowWelcome = 0;
@@ -267,19 +183,4 @@ void CMenus::OnRender()
 		m_NumInputEvents = 0;
 		return;
 	}
-}
-
-void CMenus::RenderBackground()
-{
-
-}
-
-int CMenus::DoButton_CheckBox_DontCare(const void *pID, const char *pText, int Checked, const CUIRect *pRect)
-{
-	return 0;
-}
-
-void CMenus::RenderUpdating(const char *pCaption, int current, int total)
-{
-
 }
