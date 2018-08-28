@@ -88,7 +88,6 @@ class CGameClient : public IGameClient
 	class IGraphics *m_pGraphics;
 	class ITextRender *m_pTextRender;
 	class IClient *m_pClient;
-	class ISound *m_pSound;
 	class IConsole *m_pConsole;
 	class IStorage *m_pStorage;
 	class IDemoPlayer *m_pDemoPlayer;
@@ -128,7 +127,6 @@ public:
 	class IGraphics *Graphics() const { return m_pGraphics; }
 	class IClient *Client() const { return m_pClient; }
 	class CUI *UI() { return &m_UI; }
-	class ISound *Sound() const { return m_pSound; }
 	class IInput *Input() const { return m_pInput; }
 	class IStorage *Storage() const { return m_pStorage; }
 	class IConsole *Console() { return m_pConsole; }
@@ -337,7 +335,6 @@ public:
 	class CCamera *m_pCamera;
 	class CControls *m_pControls;
 	class CEffects *m_pEffects;
-	class CSounds *m_pSounds;
 	class CMotd *m_pMotd;
 	class CMapImages *m_pMapimages;
 	class CVoting *m_pVoting;
@@ -347,8 +344,6 @@ public:
 	class CMapLayers *m_pMapLayersBackGround;
 	class CMapLayers *m_pMapLayersForeGround;
 	class CBackground *m_pBackGround;
-
-	class CMapSounds *m_pMapSounds;
 
 	// DDRace
 

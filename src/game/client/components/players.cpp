@@ -19,7 +19,6 @@
 #include <game/client/components/flow.h>
 #include <game/client/components/skins.h>
 #include <game/client/components/effects.h>
-#include <game/client/components/sounds.h>
 #include <game/client/components/controls.h>
 
 #include <engine/textrender.h>
@@ -518,23 +517,6 @@ void CPlayers::RenderPlayer(
 	{
 		float ct = (Client()->PrevGameTick()-Player.m_AttackTick)/(float)SERVER_TICK_SPEED + s_LastGameTickTime;
 		State.Add(&g_pData->m_aAnimations[ANIM_NINJA_SWING], clamp(ct*2.0f,0.0f,1.0f), 1.0f);
-	}
-
-	// do skidding
-	if(!InAir && WantOtherDir && length(Vel*50) > 500.0f)
-	{
-		static int64 SkidSoundTime = 0;
-		if(time_get()-SkidSoundTime > time_freq()/10)
-		{
-			if(g_Config.m_SndGame)
-				m_pClient->m_pSounds->PlayAt(CSounds::CHN_WORLD, SOUND_PLAYER_SKID, 0.25f, Position);
-			SkidSoundTime = time_get();
-		}
-
-		m_pClient->m_pEffects->SkidTrail(
-			Position+vec2(-Player.m_Direction*6,12),
-			vec2(-Player.m_Direction*100*length(Vel),-50)
-		);
 	}
 
 	// draw gun

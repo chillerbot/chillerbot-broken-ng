@@ -175,8 +175,6 @@ public:
 	virtual const char *LatestVersion() = 0;
 	virtual bool ConnectionProblems() = 0;
 
-	virtual bool SoundInitFailed() = 0;
-
 	virtual int GetDebugFont() = 0;
 
 	//DDRace

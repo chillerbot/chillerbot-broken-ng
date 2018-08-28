@@ -127,7 +127,6 @@ class CMenus : public CComponent
 	// for settings
 	bool m_NeedRestartSkins;
 	bool m_NeedRestartGraphics;
-	bool m_NeedRestartSound;
 	bool m_NeedRestartUpdate;
 	bool m_NeedRestartDDNet;
 	bool m_NeedSendinfo;
@@ -276,7 +275,6 @@ class CMenus : public CComponent
 	void RenderSettingsTee(CUIRect MainView);
 	void RenderSettingsControls(CUIRect MainView);
 	void RenderSettingsGraphics(CUIRect MainView);
-	void RenderSettingsSound(CUIRect MainView);
 	void RenderSettings(CUIRect MainView);
 
 	void SetActive(bool Active);
@@ -362,7 +360,6 @@ public:
 		POPUP_DELETE_DEMO,
 		POPUP_RENAME_DEMO,
 		POPUP_REMOVE_FRIEND,
-		POPUP_SOUNDERROR,
 		POPUP_PASSWORD,
 		POPUP_QUIT,
 		POPUP_DISCONNECT,

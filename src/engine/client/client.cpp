@@ -27,7 +27,6 @@
 #include <engine/map.h>
 #include <engine/masterserver.h>
 #include <engine/serverbrowser.h>
-#include <engine/sound.h>
 #include <engine/storage.h>
 #include <engine/textrender.h>
 
@@ -265,7 +264,6 @@ CClient::CClient() : m_DemoPlayer(&m_SnapshotDelta)
 	m_pEditor = 0;
 	m_pInput = 0;
 	m_pGraphics = 0;
-	m_pSound = 0;
 	m_pGameClient = 0;
 	m_pMap = 0;
 	m_pConsole = 0;
@@ -2538,7 +2536,6 @@ void CClient::InitInterfaces()
 	m_pEngine = Kernel()->RequestInterface<IEngine>();
 	m_pEditor = Kernel()->RequestInterface<IEditor>();
 	//m_pGraphics = Kernel()->RequestInterface<IEngineGraphics>();
-	m_pSound = Kernel()->RequestInterface<IEngineSound>();
 	m_pGameClient = Kernel()->RequestInterface<IGameClient>();
 	m_pInput = Kernel()->RequestInterface<IEngineInput>();
 	m_pMap = Kernel()->RequestInterface<IEngineMap>();
@@ -2602,9 +2599,6 @@ void CClient::Run()
 			return;
 		}
 	}
-
-	// init sound, allowed to fail
-	m_SoundInitFailed = Sound()->Init() != 0;
 
 	// open socket
 	{
@@ -2724,9 +2718,6 @@ void CClient::Run()
 #if !defined(CONF_PLATFORM_MACOSX) && !defined(__ANDROID__)
 		Updater()->Update();
 #endif
-
-		// update sound
-		Sound()->Update();
 
 		// panic quit button
 		if(CtrlShiftKey(KEY_Q, LastQ))
@@ -2850,7 +2841,6 @@ void CClient::Run()
 	Disconnect();
 
 	m_pGraphics->Shutdown();
-	m_pSound->Shutdown();
 
 	// shutdown SDL
 	{
@@ -3387,7 +3377,6 @@ int main(int argc, const char **argv) // ignore_convention
 	IConsole *pConsole = CreateConsole(CFGFLAG_CLIENT);
 	IStorage *pStorage = CreateStorage("Teeworlds", IStorage::STORAGETYPE_CLIENT, argc, argv); // ignore_convention
 	IConfig *pConfig = CreateConfig();
-	IEngineSound *pEngineSound = CreateEngineSound();
 	IEngineInput *pEngineInput = CreateEngineInput();
 	IEngineTextRender *pEngineTextRender = CreateEngineTextRender();
 	IEngineMap *pEngineMap = CreateEngineMap();
@@ -3399,9 +3388,6 @@ int main(int argc, const char **argv) // ignore_convention
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(pEngine);
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(pConsole);
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(pConfig);
-
-		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IEngineSound*>(pEngineSound)); // register as both
-		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<ISound*>(pEngineSound));
 
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IEngineInput*>(pEngineInput)); // register as both
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IInput*>(pEngineInput));

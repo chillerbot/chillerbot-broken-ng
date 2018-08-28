@@ -15,7 +15,6 @@
 #include <game/client/gameclient.h>
 
 #include <game/client/components/scoreboard.h>
-#include <game/client/components/sounds.h>
 #include <game/localization.h>
 
 #ifdef CONF_PLATFORM_MACOSX
@@ -51,9 +50,6 @@ void CChat::OnReset()
 	m_pHistoryEntry = 0x0;
 	m_PendingChatCounter = 0;
 	m_LastChatSend = 0;
-
-	for(int i = 0; i < CHAT_NUM; ++i)
-		m_aLastSoundPlayed[i] = 0;
 }
 
 void CChat::OnRelease()
@@ -522,50 +518,6 @@ void CChat::AddLine(int ClientID, int Team, const char *pLine)
 		char aBuf[1024];
 		str_format(aBuf, sizeof(aBuf), "%s%s", m_aLines[m_CurrentLine].m_aName, m_aLines[m_CurrentLine].m_aText);
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, Team >= 2?"whisper":(m_aLines[m_CurrentLine].m_Team?"teamchat":"chat"), aBuf, Highlighted);
-	}
-
-	// play sound
-	int64 Now = time_get();
-	if(ClientID == -1)
-	{
-		if(Now-m_aLastSoundPlayed[CHAT_SERVER] >= time_freq()*3/10)
-		{
-			if(g_Config.m_SndServerMessage)
-			{
-				m_pClient->m_pSounds->Play(CSounds::CHN_GUI, SOUND_CHAT_SERVER, 0);
-				m_aLastSoundPlayed[CHAT_SERVER] = Now;
-			}
-		}
-	}
-	else if(Highlighted)
-	{
-		if(Now-m_aLastSoundPlayed[CHAT_HIGHLIGHT] >= time_freq()*3/10)
-		{
-#ifdef CONF_PLATFORM_MACOSX
-			char aBuf[1024];
-			str_format(aBuf, sizeof(aBuf), "%s%s", m_aLines[m_CurrentLine].m_aName, m_aLines[m_CurrentLine].m_aText);
-			CNotification::notify("DDNet-Chat", aBuf);
-#else
-			Graphics()->NotifyWindow();
-#endif
-			if(g_Config.m_SndHighlight)
-			{
-				m_pClient->m_pSounds->Play(CSounds::CHN_GUI, SOUND_CHAT_HIGHLIGHT, 0);
-				m_aLastSoundPlayed[CHAT_HIGHLIGHT] = Now;
-			}
-		}
-	}
-	else if(Team != 2)
-	{
-		if(Now-m_aLastSoundPlayed[CHAT_CLIENT] >= time_freq()*3/10)
-		{
-			if ((g_Config.m_SndTeamChat || !m_aLines[m_CurrentLine].m_Team)
-				&& (g_Config.m_SndChat || m_aLines[m_CurrentLine].m_Team))
-			{
-				m_pClient->m_pSounds->Play(CSounds::CHN_GUI, SOUND_CHAT_CLIENT, 0);
-				m_aLastSoundPlayed[CHAT_CLIENT] = Now;
-			}
-		}
 	}
 }
 

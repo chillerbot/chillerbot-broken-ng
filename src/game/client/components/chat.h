@@ -64,7 +64,6 @@ class CChat : public CComponent
 	TStaticRingBuffer<CHistoryEntry, 64*1024, CRingBufferBase::FLAG_RECYCLE> m_History;
 	int m_PendingChatCounter;
 	int64 m_LastChatSend;
-	int64 m_aLastSoundPlayed[CHAT_NUM];
 
 	static void ConSay(IConsole::IResult *pResult, void *pUserData);
 	static void ConSayTeam(IConsole::IResult *pResult, void *pUserData);

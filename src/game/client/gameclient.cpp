@@ -8,7 +8,6 @@
 #include <engine/demo.h>
 #include <engine/map.h>
 #include <engine/storage.h>
-#include <engine/sound.h>
 #include <engine/serverbrowser.h>
 #include <engine/updater.h>
 #include <engine/shared/demo.h>
@@ -44,7 +43,6 @@
 #include "components/killmessages.h"
 #include "components/mapimages.h"
 #include "components/maplayers.h"
-#include "components/mapsounds.h"
 #include "components/menus.h"
 #include "components/motd.h"
 #include "components/particles.h"
@@ -52,7 +50,6 @@
 #include "components/nameplates.h"
 #include "components/scoreboard.h"
 #include "components/skins.h"
-#include "components/sounds.h"
 #include "components/spectator.h"
 #include "components/statboard.h"
 #include "components/voting.h"
@@ -83,7 +80,6 @@ static CControls gs_Controls;
 static CEffects gs_Effects;
 static CScoreboard gs_Scoreboard;
 static CStatboard gs_Statboard;
-static CSounds gs_Sounds;
 static CEmoticon gs_Emoticon;
 static CDamageInd gsDamageInd;
 static CVoting gs_Voting;
@@ -98,7 +94,6 @@ static CMapLayers gs_MapLayersBackGround(CMapLayers::TYPE_BACKGROUND);
 static CMapLayers gs_MapLayersForeGround(CMapLayers::TYPE_FOREGROUND);
 static CBackground gs_BackGround;
 
-static CMapSounds gs_MapSounds;
 
 static CRaceDemo gs_RaceDemo;
 static CGhost gs_Ghost;
@@ -125,7 +120,6 @@ void CGameClient::OnConsoleInit()
 	m_pEngine = Kernel()->RequestInterface<IEngine>();
 	m_pClient = Kernel()->RequestInterface<IClient>();
 	m_pTextRender = Kernel()->RequestInterface<ITextRender>();
-	m_pSound = Kernel()->RequestInterface<ISound>();
 	m_pInput = Kernel()->RequestInterface<IInput>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
@@ -150,7 +144,6 @@ void CGameClient::OnConsoleInit()
 	m_pCamera = &::gs_Camera;
 	m_pControls = &::gs_Controls;
 	m_pEffects = &::gs_Effects;
-	m_pSounds = &::gs_Sounds;
 	m_pMotd = &::gs_Motd;
 	m_pDamageind = &::gsDamageInd;
 	m_pMapimages = &::gs_MapImages;
@@ -161,8 +154,6 @@ void CGameClient::OnConsoleInit()
 	m_pMapLayersBackGround = &::gs_MapLayersBackGround;
 	m_pMapLayersForeGround = &::gs_MapLayersForeGround;
 	m_pBackGround = &::gs_BackGround;
-
-	m_pMapSounds = &::gs_MapSounds;
 
 	m_pRaceDemo = &::gs_RaceDemo;
 	m_pGhost = &::gs_Ghost;
@@ -176,11 +167,9 @@ void CGameClient::OnConsoleInit()
 	m_All.Add(m_pBinds);
 	m_All.Add(m_pControls);
 	m_All.Add(m_pCamera);
-	m_All.Add(m_pSounds);
 	m_All.Add(m_pVoting);
 	m_All.Add(m_pParticles); // doesn't render anything, just updates all the particles
 	m_All.Add(m_pRaceDemo);
-	m_All.Add(m_pMapSounds);
 
 	m_All.Add(&gs_BackGround);	//render instead of gs_MapLayersBackGround when g_Config.m_ClOverlayEntities == 100
 	m_All.Add(&gs_MapLayersBackGround); // first to render
@@ -745,26 +734,6 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, bool IsDummy)
 		m_aClients[pMsg->m_ClientID].m_Emoticon = pMsg->m_Emoticon;
 		m_aClients[pMsg->m_ClientID].m_EmoticonStart = Client()->GameTick();
 	}
-	else if(MsgId == NETMSGTYPE_SV_SOUNDGLOBAL)
-	{
-		if(m_SuppressEvents)
-			return;
-
-		// don't enqueue pseudo-global sounds from demos (created by PlayAndRecord)
-		CNetMsg_Sv_SoundGlobal *pMsg = (CNetMsg_Sv_SoundGlobal *)pRawMsg;
-		if(pMsg->m_SoundID == SOUND_CTF_DROP || pMsg->m_SoundID == SOUND_CTF_RETURN ||
-			pMsg->m_SoundID == SOUND_CTF_CAPTURE || pMsg->m_SoundID == SOUND_CTF_GRAB_EN ||
-			pMsg->m_SoundID == SOUND_CTF_GRAB_PL)
-		{
-			if(g_Config.m_SndGame)
-				g_GameClient.m_pSounds->Enqueue(CSounds::CHN_GLOBAL, pMsg->m_SoundID);
-		}
-		else
-		{
-			if(g_Config.m_SndGame)
-				g_GameClient.m_pSounds->Play(CSounds::CHN_GLOBAL, pMsg->m_SoundID, 1.0f);
-		}
-	}
 	else if(MsgId == NETMSGTYPE_SV_TEAMSSTATE)
 	{
 		unsigned int i;
@@ -882,12 +851,6 @@ void CGameClient::ProcessEvents()
 		{
 			CNetEvent_Death *ev = (CNetEvent_Death *)pData;
 			g_GameClient.m_pEffects->PlayerDeath(vec2(ev->m_X, ev->m_Y), ev->m_ClientID);
-		}
-		else if(Item.m_Type == NETEVENTTYPE_SOUNDWORLD)
-		{
-			CNetEvent_SoundWorld *ev = (CNetEvent_SoundWorld *)pData;
-			if(g_Config.m_SndGame && (ev->m_SoundID != SOUND_GUN_FIRE || g_Config.m_SndGun))
-				g_GameClient.m_pSounds->PlayAt(CSounds::CHN_WORLD, ev->m_SoundID, 1.0f, vec2(ev->m_X, ev->m_Y));
 		}
 	}
 }
@@ -1662,31 +1625,6 @@ void CGameClient::OnPredict()
 		{
 			m_LastNewPredictedTick[g_Config.m_ClDummy] = Tick;
 			m_NewPredictedTick = true;
-
-			if(m_Snap.m_LocalClientID != -1 && World.m_apCharacters[m_Snap.m_LocalClientID])
-			{
-				vec2 Pos = World.m_apCharacters[m_Snap.m_LocalClientID]->m_Pos;
-				int Events = World.m_apCharacters[m_Snap.m_LocalClientID]->m_TriggeredEvents;
-				if(Events&COREEVENT_GROUND_JUMP)
-					if(g_Config.m_SndGame)
-						g_GameClient.m_pSounds->PlayAndRecord(CSounds::CHN_WORLD, SOUND_PLAYER_JUMP, 1.0f, Pos);
-
-				/*if(events&COREEVENT_AIR_JUMP)
-				{
-					GameClient.effects->air_jump(pos);
-					GameClient.sounds->play_and_record(SOUNDS::CHN_WORLD, SOUND_PLAYER_AIRJUMP, 1.0f, pos);
-				}*/
-
-				//if(events&COREEVENT_HOOK_LAUNCH) snd_play_random(CHN_WORLD, SOUND_HOOK_LOOP, 1.0f, pos);
-				//if(events&COREEVENT_HOOK_ATTACH_PLAYER) snd_play_random(CHN_WORLD, SOUND_HOOK_ATTACH_PLAYER, 1.0f, pos);
-				if(Events&COREEVENT_HOOK_ATTACH_GROUND)
-					if(g_Config.m_SndGame)
-						g_GameClient.m_pSounds->PlayAndRecord(CSounds::CHN_WORLD, SOUND_HOOK_ATTACH_GROUND, 1.0f, Pos);
-				if(Events&COREEVENT_HOOK_HIT_NOHOOK)
-					if(g_Config.m_SndGame)
-						g_GameClient.m_pSounds->PlayAndRecord(CSounds::CHN_WORLD, SOUND_HOOK_NOATTACH, 1.0f, Pos);
-				//if(events&COREEVENT_HOOK_RETRACT) snd_play_random(CHN_WORLD, SOUND_PLAYER_JUMP, 1.0f, pos);
-			}
 		}
 
 

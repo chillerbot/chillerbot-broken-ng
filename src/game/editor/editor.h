@@ -21,7 +21,6 @@
 #include <engine/shared/datafile.h>
 #include <engine/editor.h>
 #include <engine/graphics.h>
-#include <engine/sound.h>
 
 #include "auto_map.h"
 
@@ -34,7 +33,6 @@ enum
 {
 	MODE_LAYERS=0,
 	MODE_IMAGES,
-	MODE_SOUNDS,
 
 	DIALOG_NONE=0,
 	DIALOG_FILE,
@@ -157,7 +155,6 @@ public:
 
 	virtual void ModifyImageIndex(INDEX_MODIFY_FUNC pfnFunc) {}
 	virtual void ModifyEnvelopeIndex(INDEX_MODIFY_FUNC pfnFunc) {}
-	virtual void ModifySoundIndex(INDEX_MODIFY_FUNC pfnFunc) {}
 
 	virtual void GetSize(float *w, float *h) { *w = 0; *h = 0;}
 
@@ -266,12 +263,6 @@ public:
 		for(int i = 0; i < m_lLayers.size(); i++)
 			m_lLayers[i]->ModifyEnvelopeIndex(Func);
 	}
-
-	void ModifySoundIndex(INDEX_MODIFY_FUNC Func)
-	{
-		for(int i = 0; i < m_lLayers.size(); i++)
-			m_lLayers[i]->ModifySoundIndex(Func);
-	}
 };
 
 class CEditorImage : public CImageInfo
@@ -303,32 +294,6 @@ public:
 	class CAutoMapper m_AutoMapper;
 };
 
-class CEditorSound
-{
-public:
-	CEditor *m_pEditor;
-
-	CEditorSound(CEditor *pEditor)
-	{
-		m_pEditor = pEditor;
-		m_aName[0] = 0;
-		m_External = 0;
-		m_SoundID = 0;
-
-		m_pData = 0x0;
-		m_DataSize = 0;
-	}
-
-	~CEditorSound();
-
-	int m_SoundID;
-	int m_External;
-	char m_aName[128];
-
-	void *m_pData;
-	unsigned m_DataSize;
-};
-
 class CEditorMap
 {
 	void MakeGameGroup(CLayerGroup *pGroup);
@@ -346,7 +311,6 @@ public:
 	array<CLayerGroup*> m_lGroups;
 	array<CEditorImage*> m_lImages;
 	array<CEnvelope*> m_lEnvelopes;
-	array<CEditorSound*> m_lSounds;
 
 	class CMapInfo
 	{
@@ -442,14 +406,6 @@ public:
 			m_lGroups[i]->ModifyEnvelopeIndex(pfnFunc);
 	}
 
-	void ModifySoundIndex(INDEX_MODIFY_FUNC pfnFunc)
-	{
-		m_Modified = true;
-		m_UndoModified++;
-		for(int i = 0; i < m_lGroups.size(); i++)
-			m_lGroups[i]->ModifySoundIndex(pfnFunc);
-	}
-
 	void Clean();
 	void CreateDefault(int EntitiesTexture);
 
@@ -492,7 +448,6 @@ enum
 	PROPTYPE_IMAGE,
 	PROPTYPE_ENVELOPE,
 	PROPTYPE_SHIFT,
-	PROPTYPE_SOUND,
 };
 
 typedef struct
@@ -606,7 +561,6 @@ class CEditor : public IEditor
 	class IConsole *m_pConsole;
 	class IGraphics *m_pGraphics;
 	class ITextRender *m_pTextRender;
-	class ISound *m_pSound;
 	class IStorage *m_pStorage;
 	CRenderTools m_RenderTools;
 	CUI m_UI;
@@ -615,7 +569,6 @@ public:
 	class IClient *Client() { return m_pClient; };
 	class IConsole *Console() { return m_pConsole; };
 	class IGraphics *Graphics() { return m_pGraphics; };
-	class ISound *Sound() { return m_pSound; }
 	class ITextRender *TextRender() { return m_pTextRender; };
 	class IStorage *Storage() { return m_pStorage; };
 	CUI *UI() { return &m_UI; }
@@ -627,7 +580,6 @@ public:
 		m_pClient = 0;
 		m_pGraphics = 0;
 		m_pTextRender = 0;
-		m_pSound = 0;
 
 		m_Mode = MODE_LAYERS;
 		m_Dialog = 0;
@@ -760,7 +712,6 @@ public:
 	CLayer *GetSelectedLayerType(int Index, int Type);
 	CLayer *GetSelectedLayer(int Index);
 	CLayerGroup *GetSelectedGroup();
-	CSoundSource *GetSelectedSource();
 
 	int DoProperties(CUIRect *pToolbox, CProperty *pProps, int *pIDs, int *pNewVal, vec4 color = vec4(1,1,1,0.5f));
 
@@ -797,7 +748,6 @@ public:
 	{
 		FILETYPE_MAP,
 		FILETYPE_IMG,
-		FILETYPE_SOUND,
 
 		MAX_PATH_LENGTH = 512
 	};
@@ -877,7 +827,6 @@ public:
 	int m_SelectedEnvelopePoint;
 	int m_SelectedQuadEnvelope;
 	int m_SelectedImage;
-	int m_SelectedSound;
 	int m_SelectedSource;
 
 	static int ms_CheckerTexture;
@@ -935,12 +884,10 @@ public:
 	static int PopupMapInfo(CEditor *pEditor, CUIRect View);
 	static int PopupEvent(CEditor *pEditor, CUIRect View);
 	static int PopupSelectImage(CEditor *pEditor, CUIRect View);
-	static int PopupSelectSound(CEditor *pEditor, CUIRect View);
 	static int PopupSelectGametileOp(CEditor *pEditor, CUIRect View);
 	static int PopupImage(CEditor *pEditor, CUIRect View);
 	static int PopupMenuFile(CEditor *pEditor, CUIRect View);
 	static int PopupSelectConfigAutoMap(CEditor *pEditor, CUIRect View);
-	static int PopupSound(CEditor *pEditor, CUIRect View);
 	static int PopupSource(CEditor *pEditor, CUIRect View);
 	static int PopupColorPicker(CEditor *pEditor, CUIRect View);
 
@@ -958,16 +905,11 @@ public:
 	void PopupSelectConfigAutoMapInvoke(float x, float y);
 	int PopupSelectConfigAutoMapResult();
 
-	void PopupSelectSoundInvoke(int Current, float x, float y);
-	int PopupSelectSoundResult();
-
 	vec4 ButtonColorMul(const void *pID);
 
 	void DoQuadEnvelopes(const array<CQuad> &m_lQuads, int TexID = -1);
 	void DoQuadEnvPoint(const CQuad *pQuad, int QIndex, int pIndex);
 	void DoQuadPoint(CQuad *pQuad, int QuadIndex, int v);
-
-	void DoSoundSource(CSoundSource *pSource, int Index);
 
 	void DoMapEditor(CUIRect View, CUIRect Toolbar);
 	void DoToolbar(CUIRect Toolbar);
@@ -976,13 +918,10 @@ public:
 	vec4 GetButtonColor(const void *pID, int Checked);
 
 	static void ReplaceImage(const char *pFilename, int StorageType, void *pUser);
-	static void ReplaceSound(const char *pFileName, int StorageType, void *pUser);
 	static void AddImage(const char *pFilename, int StorageType, void *pUser);
-	static void AddSound(const char *pFileName, int StorageType, void *pUser);
 
 	void RenderImages(CUIRect Toolbox, CUIRect Toolbar, CUIRect View);
 	void RenderLayers(CUIRect Toolbox, CUIRect Toolbar, CUIRect View);
-	void RenderSounds(CUIRect Toolbox, CUIRect Toolbar, CUIRect View);
 	void RenderModebar(CUIRect View);
 	void RenderStatusbar(CUIRect View);
 	void RenderEnvelopeEditor(CUIRect View);
@@ -1127,28 +1066,6 @@ public:
 	virtual void BrushFlipY();
 	virtual void BrushRotate(float Amount);
 	virtual void FillSelection(bool Empty, CLayer *pBrush, CUIRect Rect);
-};
-
-class CLayerSounds : public CLayer
-{
-public:
-	CLayerSounds();
-	~CLayerSounds();
-
-	virtual void Render();
-	CSoundSource *NewSource();
-
-	virtual void BrushSelecting(CUIRect Rect);
-	virtual int BrushGrab(CLayerGroup *pBrush, CUIRect Rect);
-	virtual void BrushPlace(CLayer *pBrush, float wx, float wy);
-
-	virtual int RenderProperties(CUIRect *pToolbox);
-
-	virtual void ModifyEnvelopeIndex(INDEX_MODIFY_FUNC pfnFunc);
-	virtual void ModifySoundIndex(INDEX_MODIFY_FUNC pfnFunc);
-
-	int m_Sound;
-	array<CSoundSource> m_lSources;
 };
 
 

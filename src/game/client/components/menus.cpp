@@ -26,7 +26,6 @@
 #include <game/generated/protocol.h>
 
 #include <game/generated/client_data.h>
-#include <game/client/components/sounds.h>
 #include <game/client/gameclient.h>
 #include <game/client/lineinput.h>
 #include <game/localization.h>
@@ -67,7 +66,6 @@ CMenus::CMenus()
 	m_GamePage = PAGE_GAME;
 
 	m_NeedRestartGraphics = false;
-	m_NeedRestartSound = false;
 	m_NeedSendinfo = false;
 	m_NeedSendDummyinfo = false;
 	m_MenuActive = true;
@@ -903,8 +901,6 @@ void CMenus::OnInit()
 	// setup load amount
 	m_LoadCurrent = 0;
 	m_LoadTotal = g_pData->m_NumImages;
-	if(!g_Config.m_ClThreadsoundloading)
-		m_LoadTotal += g_pData->m_NumSounds;
 }
 
 void CMenus::PopupMessage(const char *pTopic, const char *pBody, const char *pButton)
@@ -933,7 +929,6 @@ int CMenus::Render()
 	}
 	else if(s_Frame == 1)
 	{
-		m_pClient->m_pSounds->Enqueue(CSounds::CHN_MUSIC, SOUND_MENU);
 		s_Frame++;
 		m_DoubleClickIndex = -1;
 
@@ -964,14 +959,6 @@ int CMenus::Render()
 
 	// some margin around the screen
 	Screen.Margin(10.0f, &Screen);
-
-	static bool s_SoundCheck = false;
-	if(!s_SoundCheck && m_Popup == POPUP_NONE)
-	{
-		if(Client()->SoundInitFailed())
-			m_Popup = POPUP_SOUNDERROR;
-		s_SoundCheck = true;
-	}
 
 	if(m_Popup == POPUP_NONE)
 	{
@@ -1093,13 +1080,6 @@ int CMenus::Render()
 		{
 			pTitle = Localize("Remove friend");
 			pExtraText = Localize("Are you sure that you want to remove the player from your friends list?");
-			ExtraAlign = -1;
-		}
-		else if(m_Popup == POPUP_SOUNDERROR)
-		{
-			pTitle = Localize("Sound error");
-			pExtraText = Localize("The audio device couldn't be initialised.");
-			pButtonText = Localize("Ok");
 			ExtraAlign = -1;
 		}
 		else if(m_Popup == POPUP_PASSWORD)
@@ -1721,8 +1701,6 @@ void CMenus::OnStateChange(int NewState, int OldState)
 
 	if(NewState == IClient::STATE_OFFLINE)
 	{
-		if(OldState >= IClient::STATE_ONLINE && NewState < IClient::STATE_QUITING)
-			m_pClient->m_pSounds->Play(CSounds::CHN_MUSIC, SOUND_MENU, 1.0f);
 		m_Popup = POPUP_NONE;
 		if(Client()->ErrorString() && Client()->ErrorString()[0] != 0)
 		{
