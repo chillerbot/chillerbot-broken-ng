@@ -20,14 +20,12 @@
 #include <engine/config.h>
 #include <engine/console.h>
 #include <engine/engine.h>
-#include <engine/graphics.h>
 #include <engine/input.h>
 #include <engine/keys.h>
 #include <engine/map.h>
 #include <engine/masterserver.h>
 #include <engine/serverbrowser.h>
 #include <engine/storage.h>
-#include <engine/textrender.h>
 
 #include <engine/shared/config.h>
 #include <engine/shared/compression.h>
@@ -161,7 +159,6 @@ CClient::CClient() : m_DemoPlayer(&m_SnapshotDelta)
 	m_DemoRecorder[2] = CDemoRecorder(&m_SnapshotDelta);
 
 	m_pInput = 0;
-	m_pGraphics = 0;
 	m_pGameClient = 0;
 	m_pMap = 0;
 	m_pConsole = 0;
@@ -757,7 +754,6 @@ void CClient::ServerInfoRequest()
 
 int CClient::LoadData()
 {
-	m_DebugFont = Graphics()->LoadTexture("debug_font.png", IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, IGraphics::TEXLOAD_NORESAMPLE);
 	return 1;
 }
 
@@ -844,17 +840,6 @@ const char *CClient::ErrorString()
 
 void CClient::Render()
 {
-	if(g_Config.m_ClOverlayEntities)
-	{
-		vec3 bg = HslToRgb(vec3(g_Config.m_ClBackgroundEntitiesHue/255.0f, g_Config.m_ClBackgroundEntitiesSat/255.0f, g_Config.m_ClBackgroundEntitiesLht/255.0f));
-		Graphics()->Clear(bg.r, bg.g, bg.b);
-	}
-	else
-	{
-		vec3 bg = HslToRgb(vec3(g_Config.m_ClBackgroundHue/255.0f, g_Config.m_ClBackgroundSat/255.0f, g_Config.m_ClBackgroundLht/255.0f));
-		Graphics()->Clear(bg.r, bg.g, bg.b);
-	}
-
 	GameClient()->OnRender();
 	DebugRender();
 
@@ -2341,7 +2326,6 @@ void CClient::InitInterfaces()
 {
 	// fetch interfaces
 	m_pEngine = Kernel()->RequestInterface<IEngine>();
-	//m_pGraphics = Kernel()->RequestInterface<IEngineGraphics>();
 	m_pGameClient = Kernel()->RequestInterface<IGameClient>();
 	m_pInput = Kernel()->RequestInterface<IEngineInput>();
 	m_pMap = Kernel()->RequestInterface<IEngineMap>();
@@ -2389,20 +2373,6 @@ void CClient::Run()
 		atexit(SDL_Quit); // ignore_convention
 	}
 
-	// init graphics
-	{
-		m_pGraphics = CreateEngineGraphicsThreaded();
-
-		bool RegisterFail = false;
-		RegisterFail = RegisterFail || !Kernel()->RegisterInterface(static_cast<IEngineGraphics*>(m_pGraphics)); // register graphics as both
-		RegisterFail = RegisterFail || !Kernel()->RegisterInterface(static_cast<IGraphics*>(m_pGraphics));
-
-		if(RegisterFail || m_pGraphics->Init() != 0)
-		{
-			dbg_msg("client", "couldn't init graphics");
-			return;
-		}
-	}
 
 	// open socket
 	{
@@ -2426,9 +2396,6 @@ void CClient::Run()
 			while(!m_NetClient[i].Open(BindAddr, 0));
 		}
 	}
-
-	// init font rendering
-	Kernel()->RequestInterface<IEngineTextRender>()->Init();
 
 	// init the input
 	Input()->Init();
@@ -2462,9 +2429,7 @@ void CClient::Run()
 	m_Fifo.Init(m_pConsole, g_Config.m_ClInputFifo, CFGFLAG_CLIENT);
 #endif
 
-	bool LastD = false;
 	bool LastQ = false;
-	bool LastG = false;
 
 	while (1)
 	{
@@ -2521,21 +2486,13 @@ void CClient::Run()
 			break;
 		}
 
-		if(CtrlShiftKey(KEY_D, LastD))
-			g_Config.m_Debug ^= 1;
-
-		if(CtrlShiftKey(KEY_G, LastG))
-			g_Config.m_DbgGraphs ^= 1;
-
 		// render
 		{
 
 			Update();
 			int64 Now = time_get();
 
-			if((g_Config.m_GfxBackgroundRender || m_pGraphics->WindowOpen())
-				&& (!g_Config.m_GfxAsyncRenderOld || m_pGraphics->IsIdle())
-				&& (!g_Config.m_GfxRefreshRate || Now >= m_LastRenderTime + time_freq() / g_Config.m_GfxRefreshRate))
+			if(true)
 			{
 				m_RenderFrames++;
 
@@ -2553,19 +2510,16 @@ void CClient::Run()
 					if((m_RenderFrames%10) == 0)
 					{
 						DebugRender();
-						m_pGraphics->Swap();
 					}
 				}
 				else
 				{
 					Render();
-					m_pGraphics->Swap();
 				}
 				Input()->NextFrame();
 			}
 			if(Input()->VideoRestartNeeded())
 			{
-				m_pGraphics->Init();
 				LoadData();
 				GameClient()->OnInit();
 			}
@@ -2585,7 +2539,7 @@ void CClient::Run()
 		if(g_Config.m_ClCpuThrottle)
 			net_socket_read_wait(m_NetClient[0].m_Socket, g_Config.m_ClCpuThrottle * 1000);
 			//thread_sleep(g_Config.m_ClCpuThrottle);
-		else if(g_Config.m_DbgStress || (g_Config.m_ClCpuThrottleInactive && !m_pGraphics->WindowActive()))
+		else if(g_Config.m_DbgStress)
 			thread_sleep(5);
 
 		if(g_Config.m_DbgHitch)
@@ -2604,8 +2558,6 @@ void CClient::Run()
 
 	GameClient()->OnShutdown();
 	Disconnect();
-
-	m_pGraphics->Shutdown();
 
 	// shutdown SDL
 	{
@@ -2658,8 +2610,7 @@ void CClient::Con_Quit(IConsole::IResult *pResult, void *pUserData)
 
 void CClient::Con_Minimize(IConsole::IResult *pResult, void *pUserData)
 {
-	CClient *pSelf = (CClient *)pUserData;
-	pSelf->Graphics()->Minimize();
+
 }
 
 void CClient::Con_Ping(IConsole::IResult *pResult, void *pUserData)
@@ -2673,20 +2624,12 @@ void CClient::Con_Ping(IConsole::IResult *pResult, void *pUserData)
 
 void CClient::AutoScreenshot_Start()
 {
-	if(g_Config.m_ClAutoScreenshot)
-	{
-		Graphics()->TakeScreenshot("auto/autoscreen");
-		m_AutoScreenshotRecycle = true;
-	}
+
 }
 
 void CClient::AutoStatScreenshot_Start()
 {
-	if(g_Config.m_ClAutoStatboardScreenshot)
-	{
-		Graphics()->TakeScreenshot("auto/stats/autoscreen");
-		m_AutoStatScreenshotRecycle = true;
-	}
+
 }
 
 void CClient::AutoScreenshot_Cleanup()
@@ -2719,8 +2662,7 @@ void CClient::AutoStatScreenshot_Cleanup()
 
 void CClient::Con_Screenshot(IConsole::IResult *pResult, void *pUserData)
 {
-	CClient *pSelf = (CClient *)pUserData;
-	pSelf->Graphics()->TakeScreenshot(0);
+
 }
 
 void CClient::Con_Rcon(IConsole::IResult *pResult, void *pUserData)
@@ -2949,85 +2891,42 @@ void CClient::ConchainServerBrowserUpdate(IConsole::IResult *pResult, void *pUse
 
 void CClient::SwitchWindowScreen(int Index)
 {
-	// Todo SDL: remove this when fixed (changing screen when in fullscreen is bugged)
-	if(g_Config.m_GfxFullscreen)
-	{
-		ToggleFullscreen();
-		if(Graphics()->SetWindowScreen(Index))
-			g_Config.m_GfxScreen = Index;
-		ToggleFullscreen();
-	}
-	else
-	{
-		if(Graphics()->SetWindowScreen(Index))
-			g_Config.m_GfxScreen = Index;
-	}
+
 }
 
 void CClient::ConchainWindowScreen(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
-	CClient *pSelf = (CClient *)pUserData;
-	if(pSelf->Graphics() && pResult->NumArguments())
-	{
-		if(g_Config.m_GfxScreen != pResult->GetInteger(0))
-			pSelf->SwitchWindowScreen(pResult->GetInteger(0));
-	}
-	else
-		pfnCallback(pResult, pCallbackUserData);
+
 }
 
 void CClient::ToggleFullscreen()
 {
-	if(Graphics()->Fullscreen(g_Config.m_GfxFullscreen^1))
-		g_Config.m_GfxFullscreen ^= 1;
+
 }
 
 void CClient::ConchainFullscreen(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
-	CClient *pSelf = (CClient *)pUserData;
-	if(pSelf->Graphics() && pResult->NumArguments())
-	{
-		if(g_Config.m_GfxFullscreen != pResult->GetInteger(0))
-			pSelf->ToggleFullscreen();
-	}
-	else
-		pfnCallback(pResult, pCallbackUserData);
+
 }
 
 void CClient::ToggleWindowBordered()
 {
-	g_Config.m_GfxBorderless ^= 1;
-	Graphics()->SetWindowBordered(!g_Config.m_GfxBorderless);
+
 }
 
 void CClient::ConchainWindowBordered(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
-	CClient *pSelf = (CClient *)pUserData;
-	if(pSelf->Graphics() && pResult->NumArguments())
-	{
-		if(!g_Config.m_GfxFullscreen && (g_Config.m_GfxBorderless != pResult->GetInteger(0)))
-			pSelf->ToggleWindowBordered();
-	}
-	else
-		pfnCallback(pResult, pCallbackUserData);
+
 }
 
 void CClient::ToggleWindowVSync()
 {
-	if(Graphics()->SetVSync(g_Config.m_GfxVsync^1))
-		g_Config.m_GfxVsync ^= 1;
+
 }
 
 void CClient::ConchainWindowVSync(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
-	CClient *pSelf = (CClient *)pUserData;
-	if(pSelf->Graphics() && pResult->NumArguments())
-	{
-		if(g_Config.m_GfxVsync != pResult->GetInteger(0))
-			pSelf->ToggleWindowVSync();
-	}
-	else
-		pfnCallback(pResult, pCallbackUserData);
+
 }
 
 void CClient::RegisterCommands()
@@ -3143,7 +3042,6 @@ int main(int argc, const char **argv) // ignore_convention
 	IStorage *pStorage = CreateStorage("Teeworlds", IStorage::STORAGETYPE_CLIENT, argc, argv); // ignore_convention
 	IConfig *pConfig = CreateConfig();
 	IEngineInput *pEngineInput = CreateEngineInput();
-	IEngineTextRender *pEngineTextRender = CreateEngineTextRender();
 	IEngineMap *pEngineMap = CreateEngineMap();
 	IEngineMasterServer *pEngineMasterServer = CreateEngineMasterServer();
 
@@ -3156,9 +3054,6 @@ int main(int argc, const char **argv) // ignore_convention
 
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IEngineInput*>(pEngineInput)); // register as both
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IInput*>(pEngineInput));
-
-		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IEngineTextRender*>(pEngineTextRender)); // register as both
-		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<ITextRender*>(pEngineTextRender));
 
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IEngineMap*>(pEngineMap)); // register as both
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IMap*>(pEngineMap));

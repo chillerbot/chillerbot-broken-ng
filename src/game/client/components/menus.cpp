@@ -60,7 +60,6 @@ CMenus::CMenus()
 	m_ActivePage = PAGE_INTERNET;
 	m_GamePage = PAGE_GAME;
 
-	m_NeedRestartGraphics = false;
 	m_NeedSendinfo = false;
 	m_NeedSendDummyinfo = false;
 	m_MenuActive = true;
@@ -86,10 +85,6 @@ CMenus::CMenus()
 
 vec4 CMenus::ButtonColorMul(const void *pID)
 {
-	if(UI()->ActiveItem() == pID)
-		return vec4(1,1,1,0.5f);
-	else if(UI()->HotItem() == pID)
-		return vec4(1,1,1,1.5f);
 	return vec4(1,1,1,1);
 }
 
@@ -206,9 +201,6 @@ int CMenus::Render()
 void CMenus::SetActive(bool Active)
 {
 	m_MenuActive = Active;
-#if defined(__ANDROID__)
-	UI()->AndroidShowScreenKeys(!m_MenuActive && !m_pClient->m_pControls->m_UsingGamepad);
-#endif
 	if(!m_MenuActive)
 	{
 		if(m_NeedSendinfo)

@@ -138,20 +138,7 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 	s_ScrollValue = DoScrollbarV(&s_ScrollBar, &Scroll, s_ScrollValue);
 
 	int ScrollNum = NumServers-Num+1;
-	if(ScrollNum > 0)
-	{
-		if(m_ScrollOffset >= 0)
-		{
-			s_ScrollValue = (float)(m_ScrollOffset)/ScrollNum;
-			m_ScrollOffset = -1;
-		}
-		if(Input()->KeyPress(KEY_MOUSE_WHEEL_UP) && UI()->MouseInside(&View))
-			s_ScrollValue -= 3.0f/ScrollNum;
-		if(Input()->KeyPress(KEY_MOUSE_WHEEL_DOWN) && UI()->MouseInside(&View))
-			s_ScrollValue += 3.0f/ScrollNum;
-	}
-	else
-		ScrollNum = 0;
+	ScrollNum = 0;
 
 	if(m_SelectedIndex > -1)
 	{

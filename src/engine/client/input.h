@@ -5,8 +5,6 @@
 
 class CInput : public IEngineInput
 {
-	IEngineGraphics *m_pGraphics;
-
 	int m_InputGrabbed;
 	char *m_pClipboardText;
 
@@ -26,8 +24,6 @@ class CInput : public IEngineInput
 	int m_InputCounter;
 
 	bool KeyState(int Key) const;
-
-	IEngineGraphics *Graphics() { return m_pGraphics; }
 
 public:
 	CInput();

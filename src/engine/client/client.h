@@ -28,7 +28,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	// needed interfaces
 	IEngine *m_pEngine;
 	IEngineInput *m_pInput;
-	IEngineGraphics *m_pGraphics;
 	IGameClient *m_pGameClient;
 	IEngineMap *m_pMap;
 	IConsole *m_pConsole;
@@ -151,9 +150,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 		class CHostLookup m_VersionServeraddr;
 	} m_VersionInfo;
 
-	volatile int m_GfxState;
-	static void GraphicsThreadProxy(void *pThis) { ((CClient*)pThis)->GraphicsThread(); }
-	void GraphicsThread();
 	vec3 GetColorV3(int v);
 
 	char m_aDDNetSrvListToken[4];
@@ -165,7 +161,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 
 public:
 	IEngine *Engine() { return m_pEngine; }
-	IEngineGraphics *Graphics() { return m_pGraphics; }
 	IEngineInput *Input() { return m_pInput; }
 	IGameClient *GameClient() { return m_pGameClient; }
 	IEngineMasterServer *MasterServer() { return m_pMasterServer; }

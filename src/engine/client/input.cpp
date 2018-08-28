@@ -1,10 +1,8 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
-#include "SDL.h"
 
 #include <base/system.h>
 #include <engine/shared/config.h>
-#include <engine/graphics.h>
 #include <engine/input.h>
 #include <engine/keys.h>
 
@@ -52,44 +50,22 @@ CInput::CInput()
 
 void CInput::Init()
 {
-	m_pGraphics = Kernel()->RequestInterface<IEngineGraphics>();
 
-	MouseModeRelative();
 }
 
 void CInput::MouseRelative(float *x, float *y)
 {
-	if(!m_MouseFocus || !m_InputGrabbed)
-		return;
 
-#if defined(__ANDROID__) // No relative mouse on Android
-	int nx = 0, ny = 0;
-	SDL_GetMouseState(&nx, &ny);
-	*x = nx;
-	*y = ny;
-#else
-	int nx = 0, ny = 0;
-	float Sens = ((g_Config.m_ClDyncam && g_Config.m_ClDyncamMousesens) ? g_Config.m_ClDyncamMousesens : g_Config.m_InpMousesens) / 100.0f;
-
-	SDL_GetRelativeMouseState(&nx,&ny);
-
-	*x = nx*Sens;
-	*y = ny*Sens;
-#endif
 }
 
 void CInput::MouseModeAbsolute()
 {
-	m_InputGrabbed = 0;
-	SDL_SetRelativeMouseMode(SDL_FALSE);
-	Graphics()->SetWindowGrab(false);
+
 }
 
 void CInput::MouseModeRelative()
 {
-	m_InputGrabbed = 1;
-	SDL_SetRelativeMouseMode(SDL_TRUE);
-	Graphics()->SetWindowGrab(true);
+
 }
 
 int CInput::MouseDoubleClick()
@@ -105,17 +81,12 @@ int CInput::MouseDoubleClick()
 
 const char* CInput::GetClipboardText()
 {
-	if(m_pClipboardText)
-	{
-		SDL_free(m_pClipboardText);
-	}
-	m_pClipboardText = SDL_GetClipboardText();
-	return m_pClipboardText;
+	return "";
 }
 
 void CInput::SetClipboardText(const char *Text)
 {
-	SDL_SetClipboardText(Text);
+
 }
 
 void CInput::Clear()
@@ -127,164 +98,16 @@ void CInput::Clear()
 
 bool CInput::KeyState(int Key) const
 {
-	return m_aInputState[Key>=KEY_MOUSE_1 ? Key : SDL_GetScancodeFromKey(KeyToKeycode(Key))];
+	return false;
 }
 
 void CInput::NextFrame()
 {
-	int i;
-	const Uint8 *pState = SDL_GetKeyboardState(&i);
-	if(i >= KEY_LAST)
-		i = KEY_LAST-1;
-	mem_copy(m_aInputState, pState, i);
+
 }
 
 int CInput::Update()
 {
-	// keep the counter between 1..0xFFFF, 0 means not pressed
-	m_InputCounter = (m_InputCounter%0xFFFF)+1;
-
-	// these states must always be updated manually because they are not in the GetKeyState from SDL
-	int i = SDL_GetMouseState(NULL, NULL);
-	if(i&SDL_BUTTON(1)) m_aInputState[KEY_MOUSE_1] = 1; // 1 is left
-	if(i&SDL_BUTTON(3)) m_aInputState[KEY_MOUSE_2] = 1; // 3 is right
-	if(i&SDL_BUTTON(2)) m_aInputState[KEY_MOUSE_3] = 1; // 2 is middle
-	if(i&SDL_BUTTON(4)) m_aInputState[KEY_MOUSE_4] = 1;
-	if(i&SDL_BUTTON(5)) m_aInputState[KEY_MOUSE_5] = 1;
-	if(i&SDL_BUTTON(6)) m_aInputState[KEY_MOUSE_6] = 1;
-	if(i&SDL_BUTTON(7)) m_aInputState[KEY_MOUSE_7] = 1;
-	if(i&SDL_BUTTON(8)) m_aInputState[KEY_MOUSE_8] = 1;
-	if(i&SDL_BUTTON(9)) m_aInputState[KEY_MOUSE_9] = 1;
-
-	{
-		SDL_Event Event;
-		bool IgnoreKeys = false;
-		while(SDL_PollEvent(&Event))
-		{
-			int Key = -1;
-			int Scancode = 0;
-			int Action = IInput::FLAG_PRESS;
-			switch (Event.type)
-			{
-				case SDL_TEXTINPUT:
-					AddEvent(Event.text.text, 0, IInput::FLAG_TEXT);
-					break;
-				// handle keys
-				case SDL_KEYDOWN:
-					// See SDL_Keymod for possible modifiers:
-					// NONE   =     0
-					// LSHIFT =     1
-					// RSHIFT =     2
-					// LCTRL  =    64
-					// RCTRL  =   128
-					// LALT   =   256
-					// RALT   =   512
-					// LGUI   =  1024
-					// RGUI   =  2048
-					// NUM    =  4096
-					// CAPS   =  8192
-					// MODE   = 16384
-					// Sum if you want to ignore multiple modifiers.
-					if(!(Event.key.keysym.mod & g_Config.m_InpIgnoredModifiers))
-					{
-						Key = KeycodeToKey(Event.key.keysym.sym);
-						Scancode = Event.key.keysym.scancode;
-					}
-					break;
-				case SDL_KEYUP:
-					Action = IInput::FLAG_RELEASE;
-					Key = KeycodeToKey(Event.key.keysym.sym);
-					Scancode = Event.key.keysym.scancode;
-					break;
-
-				// handle mouse buttons
-				case SDL_MOUSEBUTTONUP:
-					Action = IInput::FLAG_RELEASE;
-
-					if(Event.button.button == 1) // ignore_convention
-					{
-						m_ReleaseDelta = time_get() - m_LastRelease;
-						m_LastRelease = time_get();
-					}
-
-					// fall through
-				case SDL_MOUSEBUTTONDOWN:
-					if(Event.button.button == SDL_BUTTON_LEFT) Key = KEY_MOUSE_1; // ignore_convention
-					if(Event.button.button == SDL_BUTTON_RIGHT) Key = KEY_MOUSE_2; // ignore_convention
-					if(Event.button.button == SDL_BUTTON_MIDDLE) Key = KEY_MOUSE_3; // ignore_convention
-					if(Event.button.button == SDL_BUTTON_X1) Key = KEY_MOUSE_4; // ignore_convention
-					if(Event.button.button == SDL_BUTTON_X2) Key = KEY_MOUSE_5; // ignore_convention
-					if(Event.button.button == 6) Key = KEY_MOUSE_6; // ignore_convention
-					if(Event.button.button == 7) Key = KEY_MOUSE_7; // ignore_convention
-					if(Event.button.button == 8) Key = KEY_MOUSE_8; // ignore_convention
-					if(Event.button.button == 9) Key = KEY_MOUSE_9; // ignore_convention
-					Scancode = Key;
-					break;
-
-				case SDL_MOUSEWHEEL:
-					if(Event.wheel.y > 0) Key = KEY_MOUSE_WHEEL_UP; // ignore_convention
-					if(Event.wheel.y < 0) Key = KEY_MOUSE_WHEEL_DOWN; // ignore_convention
-					if(Event.wheel.x > 0) Key = KEY_MOUSE_WHEEL_LEFT; // ignore_convention
-					if(Event.wheel.x < 0) Key = KEY_MOUSE_WHEEL_RIGHT; // ignore_convention
-					Action |= IInput::FLAG_RELEASE;
-					Scancode = Key;
-					break;
-
-				case SDL_WINDOWEVENT:
-					// Ignore keys following a focus gain as they may be part of global
-					// shortcuts
-					switch (Event.window.event)
-					{
-						case SDL_WINDOWEVENT_RESIZED:
-#if defined(SDL_VIDEO_DRIVER_X11)
-							Graphics()->Resize(Event.window.data1, Event.window.data2);
-#elif defined(__ANDROID__)
-							m_VideoRestartNeeded = 1;
-#endif
-							break;
-						case SDL_WINDOWEVENT_FOCUS_GAINED:
-							if(m_InputGrabbed)
-								MouseModeRelative();
-							m_MouseFocus = true;
-							IgnoreKeys = true;
-							break;
-						case SDL_WINDOWEVENT_FOCUS_LOST:
-							m_MouseFocus = false;
-							IgnoreKeys = true;
-							if(m_InputGrabbed)
-							{
-								MouseModeAbsolute();
-								// Remember that we had relative mouse
-								m_InputGrabbed = true;
-							}
-							break;
-#if defined(CONF_PLATFORM_MACOSX)	// Todo: remove this when fixed in SDL
-						case SDL_WINDOWEVENT_MAXIMIZED:
-							MouseModeAbsolute();
-							MouseModeRelative();
-							break;
-#endif
-					}
-					break;
-
-				// other messages
-				case SDL_QUIT:
-					return 1;
-			}
-
-			if(Key >= 0 && Key < g_MaxKeys && !IgnoreKeys)
-			{
-				if(Action&IInput::FLAG_PRESS)
-				{
-					m_aInputState[Scancode] = 1;
-					m_aInputCount[Key] = m_InputCounter;
-				}
-				AddEvent(0, Key, Action);
-			}
-
-		}
-	}
-
 	return 0;
 }
 

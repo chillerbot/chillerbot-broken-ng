@@ -35,14 +35,8 @@ class CUI
 	unsigned m_LastMouseButtons;
 
 	CUIRect m_Screen;
-	class IGraphics *m_pGraphics;
-	class ITextRender *m_pTextRender;
 
 public:
-	// TODO: Refactor: Fill this in
-	void SetGraphics(class IGraphics *pGraphics, class ITextRender *pTextRender) { m_pGraphics = pGraphics; m_pTextRender = pTextRender;}
-	class IGraphics *Graphics() { return m_pGraphics; }
-	class ITextRender *TextRender() { return m_pTextRender; }
 
 	CUI();
 

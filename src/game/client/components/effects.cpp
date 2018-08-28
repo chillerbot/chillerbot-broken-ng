@@ -12,7 +12,6 @@
 
 #include <game/client/components/particles.h>
 #include <game/client/components/skins.h>
-#include <game/client/components/flow.h>
 #include <game/client/components/damageind.h>
 #include <game/client/gameclient.h>
 
@@ -191,17 +190,6 @@ void CEffects::PlayerDeath(vec2 Pos, int ClientID)
 
 void CEffects::Explosion(vec2 Pos)
 {
-	// add to flow
-	for(int y = -8; y <= 8; y++)
-		for(int x = -8; x <= 8; x++)
-		{
-			if(x == 0 && y == 0)
-				continue;
-
-			float a = 1 - (length(vec2(x,y)) / length(vec2(8,8)));
-			m_pClient->m_pFlow->Add(Pos+vec2(x,y)*16, normalize(vec2(x,y))*5000.0f*a, 10.0f);
-		}
-
 	// add the explosion
 	CParticle p;
 	p.SetDefault();
@@ -271,9 +259,6 @@ void CEffects::OnRender()
 		else
 			m_Add50hz = false;
 
-		if(m_Add50hz)
-			m_pClient->m_pFlow->Update();
-
 		return;
 	}
 
@@ -292,7 +277,4 @@ void CEffects::OnRender()
 	}
 	else
 		m_Add50hz = false;
-
-	if(m_Add50hz)
-		m_pClient->m_pFlow->Update();
 }

@@ -18,8 +18,6 @@
 #include <cstring>
 #include <cstdio>
 
-#include <game/client/ui.h>
-
 #include <game/version.h>
 
 #include <game/client/lineinput.h>
@@ -79,187 +77,17 @@ void CGameConsole::CInstance::ExecuteLine(const char *pLine)
 
 void CGameConsole::CInstance::PossibleCommandsCompleteCallback(const char *pStr, void *pUser)
 {
-	CGameConsole::CInstance *pInstance = (CGameConsole::CInstance *)pUser;
-	if(pInstance->m_CompletionChosen == pInstance->m_CompletionEnumerationCount)
-		pInstance->m_Input.Set(pStr);
-	pInstance->m_CompletionEnumerationCount++;
+
 }
 
 void CGameConsole::CInstance::OnInput(IInput::CEvent Event)
 {
-	bool Handled = false;
 
-	if(m_pGameConsole->Input()->KeyIsPressed(KEY_LCTRL) && m_pGameConsole->Input()->KeyPress(KEY_V))
-	{
-		const char *Text = m_pGameConsole->Input()->GetClipboardText();
-		if(Text)
-		{
-			char Line[256];
-			int i, Begin = 0;
-			for(i = 0; i < str_length(Text); i++)
-			{
-				if(Text[i] == '\n')
-				{
-					if(i == Begin)
-					{
-						Begin++;
-						continue;
-					}
-					int max = min(i - Begin + 1, (int)sizeof(Line));
-					str_copy(Line, Text + Begin, max);
-					Begin = i+1;
-					ExecuteLine(Line);
-				}
-			}
-			int max = min(i - Begin + 1, (int)sizeof(Line));
-			str_copy(Line, Text + Begin, max);
-			Begin = i+1;
-			m_Input.Add(Line);
-		}
-	}
-
-	if(m_pGameConsole->Input()->KeyIsPressed(KEY_LCTRL) && m_pGameConsole->Input()->KeyPress(KEY_C))
-	{
-		m_pGameConsole->Input()->SetClipboardText(m_Input.GetString());
-	}
-
-	if(Event.m_Flags&IInput::FLAG_PRESS)
-	{
-		if(Event.m_Key == KEY_RETURN || Event.m_Key == KEY_KP_ENTER)
-		{
-			if(m_Input.GetString()[0])
-			{
-				if(m_Type == CONSOLETYPE_LOCAL || m_pGameConsole->Client()->RconAuthed())
-				{
-					char *pEntry = m_History.Allocate(m_Input.GetLength()+1);
-					mem_copy(pEntry, m_Input.GetString(), m_Input.GetLength()+1);
-				}
-				ExecuteLine(m_Input.GetString());
-				m_Input.Clear();
-				m_pHistoryEntry = 0x0;
-			}
-
-			Handled = true;
-		}
-		else if (Event.m_Key == KEY_UP)
-		{
-			if (m_pHistoryEntry)
-			{
-				char *pTest = m_History.Prev(m_pHistoryEntry);
-
-				if (pTest)
-					m_pHistoryEntry = pTest;
-			}
-			else
-				m_pHistoryEntry = m_History.Last();
-
-			if (m_pHistoryEntry)
-				m_Input.Set(m_pHistoryEntry);
-			Handled = true;
-		}
-		else if (Event.m_Key == KEY_DOWN)
-		{
-			if (m_pHistoryEntry)
-				m_pHistoryEntry = m_History.Next(m_pHistoryEntry);
-
-			if (m_pHistoryEntry)
-				m_Input.Set(m_pHistoryEntry);
-			else
-				m_Input.Clear();
-			Handled = true;
-		}
-		else if(Event.m_Key == KEY_TAB)
-		{
-			if(m_Type == CGameConsole::CONSOLETYPE_LOCAL || m_pGameConsole->Client()->RconAuthed())
-			{
-				if(m_ReverseTAB)
-					 m_CompletionChosen--;
-				else
-					m_CompletionChosen++;
-				m_CompletionEnumerationCount = 0;
-				m_pGameConsole->m_pConsole->PossibleCommands(m_aCompletionBuffer, m_CompletionFlagmask, m_Type != CGameConsole::CONSOLETYPE_LOCAL &&
-					m_pGameConsole->Client()->RconAuthed() && m_pGameConsole->Client()->UseTempRconCommands(),	PossibleCommandsCompleteCallback, this);
-
-				// handle wrapping
-				if(m_CompletionEnumerationCount && (m_CompletionChosen >= m_CompletionEnumerationCount || m_CompletionChosen <0))
-				{
-					m_CompletionChosen= (m_CompletionChosen + m_CompletionEnumerationCount) %  m_CompletionEnumerationCount;
-					m_CompletionEnumerationCount = 0;
-					m_pGameConsole->m_pConsole->PossibleCommands(m_aCompletionBuffer, m_CompletionFlagmask, m_Type != CGameConsole::CONSOLETYPE_LOCAL &&
-						m_pGameConsole->Client()->RconAuthed() && m_pGameConsole->Client()->UseTempRconCommands(),	PossibleCommandsCompleteCallback, this);
-				}
-			}
-		}
-		else if(Event.m_Key == KEY_PAGEUP)
-		{
-			++m_BacklogActPage;
-		}
-		else if(Event.m_Key == KEY_PAGEDOWN)
-		{
-			--m_BacklogActPage;
-			if(m_BacklogActPage < 0)
-				m_BacklogActPage = 0;
-		}
-		else if(Event.m_Key == KEY_LSHIFT)
-		{
-			m_ReverseTAB = true;
-			Handled = true;
-		}
-	}
-	if(Event.m_Flags&IInput::FLAG_RELEASE && Event.m_Key == KEY_LSHIFT)
-	{
-		m_ReverseTAB = false;
-		Handled = true;
-	}
-
-	if(!Handled)
-		m_Input.ProcessInput(Event);
-
-	if(Event.m_Flags & (IInput::FLAG_PRESS|IInput::FLAG_TEXT))
-	{
-		if((Event.m_Key != KEY_TAB) && (Event.m_Key != KEY_LSHIFT))
-		{
-			m_CompletionChosen = -1;
-			str_copy(m_aCompletionBuffer, m_Input.GetString(), sizeof(m_aCompletionBuffer));
-			m_CompletionRenderOffset = 0.0f;
-		}
-
-		// find the current command
-		{
-			char aBuf[64] = {0};
-			const char *pSrc = GetString();
-			int i = 0;
-			for(; i < (int)sizeof(aBuf)-1 && *pSrc && *pSrc != ' '; i++, pSrc++)
-				aBuf[i] = *pSrc;
-			aBuf[i] = 0;
-
-			const IConsole::CCommandInfo *pCommand = m_pGameConsole->m_pConsole->GetCommandInfo(aBuf, m_CompletionFlagmask,
-				m_Type != CGameConsole::CONSOLETYPE_LOCAL && m_pGameConsole->Client()->RconAuthed() && m_pGameConsole->Client()->UseTempRconCommands());
-			if(pCommand)
-			{
-				m_IsCommand = true;
-				str_copy(m_aCommandName, pCommand->m_pName, IConsole::TEMPCMD_NAME_LENGTH);
-				str_copy(m_aCommandHelp, pCommand->m_pHelp, IConsole::TEMPCMD_HELP_LENGTH);
-				str_copy(m_aCommandParams, pCommand->m_pParams, IConsole::TEMPCMD_PARAMS_LENGTH);
-			}
-			else
-				m_IsCommand = false;
-		}
-	}
 }
 
 void CGameConsole::CInstance::PrintLine(const char *pLine, bool Highlighted)
 {
-	int Len = str_length(pLine);
 
-	if (Len > 255)
-		Len = 255;
-
-	CBacklogEntry *pEntry = m_Backlog.Allocate(sizeof(CBacklogEntry)+Len);
-	pEntry->m_YOffset = -1.0f;
-	pEntry->m_Highlighted = Highlighted;
-	mem_copy(pEntry->m_aText, pLine, Len);
-	pEntry->m_aText[Len] = 0;
 }
 
 CGameConsole::CGameConsole()
@@ -314,22 +142,7 @@ void CGameConsole::Toggle(int Type)
 
 void CGameConsole::Dump(int Type)
 {
-	CInstance *pConsole = Type == CONSOLETYPE_REMOTE ? &m_RemoteConsole : &m_LocalConsole;
-	char aFilename[128];
-	char aDate[20];
 
-	str_timestamp(aDate, sizeof(aDate));
-	str_format(aFilename, sizeof(aFilename), "dumps/%s_dump_%s.txt", Type==CONSOLETYPE_REMOTE?"remote_console":"local_console", aDate);
-	IOHANDLE io = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
-	if(io)
-	{
-		for(CInstance::CBacklogEntry *pEntry = pConsole->m_Backlog.First(); pEntry; pEntry = pConsole->m_Backlog.Next(pEntry))
-		{
-			io_write(io, pEntry->m_aText, str_length(pEntry->m_aText));
-			io_write_newline(io);
-		}
-		io_close(io);
-	}
 }
 
 void CGameConsole::ConToggleLocalConsole(IConsole::IResult *pResult, void *pUserData)

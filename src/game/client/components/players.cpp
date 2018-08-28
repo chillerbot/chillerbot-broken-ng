@@ -13,7 +13,6 @@
 #include <game/client/animstate.h>
 #include <game/client/gameclient.h>
 
-#include <game/client/components/flow.h>
 #include <game/client/components/skins.h>
 #include <game/client/components/effects.h>
 #include <game/client/components/controls.h>

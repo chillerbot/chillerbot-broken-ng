@@ -2,8 +2,6 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <engine/engine.h>
 #include <engine/friends.h>
-#include <engine/graphics.h>
-#include <engine/textrender.h>
 #include <engine/demo.h>
 #include <engine/map.h>
 #include <engine/storage.h>
@@ -36,12 +34,10 @@
 #include "components/debughud.h"
 #include "components/effects.h"
 #include "components/emoticon.h"
-#include "components/flow.h"
 #include "components/hud.h"
 #include "components/items.h"
 #include "components/killmessages.h"
 #include "components/mapimages.h"
-#include "components/menus.h"
 #include "components/motd.h"
 #include "components/particles.h"
 #include "components/players.h"
@@ -54,7 +50,6 @@
 
 #include <base/system.h>
 #include "components/race_demo.h"
-#include "components/ghost.h"
 #include <base/tl/sorted_array.h>
 
 CGameClient g_GameClient;
@@ -68,10 +63,8 @@ static CBroadcast gs_Broadcast;
 static CGameConsole gs_GameConsole;
 static CBinds gs_Binds;
 static CParticles gs_Particles;
-static CMenus gs_Menus;
 static CSkins gs_Skins;
 static CCountryFlags gs_CountryFlags;
-static CFlow gs_Flow;
 static CHud gs_Hud;
 static CDebugHud gs_DebugHud;
 static CControls gs_Controls;
@@ -92,7 +85,6 @@ static CBackground gs_BackGround;
 
 
 static CRaceDemo gs_RaceDemo;
-static CGhost gs_Ghost;
 
 CGameClient::CStack::CStack() { m_Num = 0; }
 void CGameClient::CStack::Add(class CComponent *pComponent) { m_paComponents[m_Num++] = pComponent; }
@@ -115,7 +107,6 @@ void CGameClient::OnConsoleInit()
 {
 	m_pEngine = Kernel()->RequestInterface<IEngine>();
 	m_pClient = Kernel()->RequestInterface<IClient>();
-	m_pTextRender = Kernel()->RequestInterface<ITextRender>();
 	m_pInput = Kernel()->RequestInterface<IInput>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
@@ -131,11 +122,9 @@ void CGameClient::OnConsoleInit()
 	m_pBinds = &::gs_Binds;
 	m_pGameConsole = &::gs_GameConsole;
 	m_pParticles = &::gs_Particles;
-	m_pMenus = &::gs_Menus;
 	m_pSkins = &::gs_Skins;
 	m_pCountryFlags = &::gs_CountryFlags;
 	m_pChat = &::gs_Chat;
-	m_pFlow = &::gs_Flow;
 	m_pCamera = &::gs_Camera;
 	m_pControls = &::gs_Controls;
 	m_pEffects = &::gs_Effects;
@@ -149,7 +138,6 @@ void CGameClient::OnConsoleInit()
 	m_pBackGround = &::gs_BackGround;
 
 	m_pRaceDemo = &::gs_RaceDemo;
-	m_pGhost = &::gs_Ghost;
 
 	// make a list of all the systems, make sure to add them in the correct render order
 	m_All.Add(m_pSkins);
@@ -168,7 +156,6 @@ void CGameClient::OnConsoleInit()
 	m_All.Add(&m_pParticles->m_RenderTrail);
 	m_All.Add(m_pItems);
 	m_All.Add(&gs_Players);
-	m_All.Add(m_pGhost);
 	m_All.Add(&m_pParticles->m_RenderExplosions);
 	m_All.Add(&gs_NamePlates);
 	m_All.Add(&m_pParticles->m_RenderGeneral);
@@ -183,16 +170,13 @@ void CGameClient::OnConsoleInit()
 	m_All.Add(&gs_Scoreboard);
 	m_All.Add(&gs_Statboard);
 	m_All.Add(m_pMotd);
-	m_All.Add(m_pMenus);
 	m_All.Add(m_pGameConsole);
 
 	// build the input stack
-	m_Input.Add(&m_pMenus->m_Binder); // this will take over all input when we want to bind a key
 	m_Input.Add(&m_pBinds->m_SpecialBinds);
 	m_Input.Add(m_pGameConsole);
 	m_Input.Add(m_pChat); // chat has higher prio due to tha you can quit it by pressing esc
 	m_Input.Add(m_pMotd); // for pressing esc to remove it
-	m_Input.Add(m_pMenus);
 	m_Input.Add(&gs_Spectator);
 	m_Input.Add(&gs_Emoticon);
 	m_Input.Add(m_pControls);
@@ -254,13 +238,6 @@ void CGameClient::OnConsoleInit()
 
 void CGameClient::OnInit()
 {
-	m_pGraphics = Kernel()->RequestInterface<IGraphics>();
-
-	// propagate pointers
-	m_UI.SetGraphics(Graphics(), TextRender());
-	m_RenderTools.m_pGraphics = Graphics();
-	m_RenderTools.m_pUI = UI();
-
 	int64 Start = time_get();
 
 	// set the language
@@ -271,35 +248,11 @@ void CGameClient::OnInit()
 	for(int i = 0; i < NUM_NETOBJTYPES; i++)
 		Client()->SnapSetStaticsize(i, m_NetObjHandler.GetObjSize(i));
 
-	// load default font
-	static CFont *pDefaultFont = 0;
-	char aFilename[512];
-	const char *pFontFile = "fonts/DejaVuSansCJKName.ttf";
-	if (str_find(g_Config.m_ClLanguagefile, "chinese") != NULL || str_find(g_Config.m_ClLanguagefile, "japanese") != NULL ||
-		str_find(g_Config.m_ClLanguagefile, "korean") != NULL)
-		pFontFile = "fonts/DejavuWenQuanYiMicroHei.ttf";
-	IOHANDLE File = Storage()->OpenFile(pFontFile, IOFLAG_READ, IStorage::TYPE_ALL, aFilename, sizeof(aFilename));
-	if(File)
-	{
-		io_close(File);
-		pDefaultFont = TextRender()->LoadFont(aFilename);
-		TextRender()->SetDefaultFont(pDefaultFont);
-	}
-	if(!pDefaultFont)
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "gameclient", "failed to load font. filename='%s'", pFontFile);
-
 	// init all components
 	for(int i = m_All.m_Num-1; i >= 0; --i)
 		m_All.m_paComponents[i]->OnInit();
 
 	char aBuf[256];
-
-	// setup load amount// load textures
-	for(int i = 0; i < g_pData->m_NumImages; i++)
-	{
-		g_pData->m_aImages[i].m_Id = Graphics()->LoadTexture(g_pData->m_aImages[i].m_pFilename, IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, 0);
-		g_GameClient.m_pMenus->RenderLoading();
-	}
 
 #if defined(__ANDROID__)
 	m_pMapimages->OnMapLoad(); // Reload map textures on Android
@@ -387,8 +340,6 @@ void CGameClient::OnConnected()
 {
 	m_Layers.Init(Kernel());
 	m_Collision.Init(Layers());
-
-	RenderTools()->RenderTilemapGenerateSkip(Layers());
 
 	for(int i = 0; i < m_All.m_Num; i++)
 	{
@@ -553,7 +504,7 @@ void CGameClient::OnRender()
 		g_Config.m_ClDummy = 0;
 
 	// resend player and dummy info if it was filtered by server
-	if(Client()->State() == IClient::STATE_ONLINE && !m_pMenus->IsActive()) {
+	if(Client()->State() == IClient::STATE_ONLINE) {
 		if(m_CheckInfo[0] == 0) {
 			if(
 			str_comp(m_aClients[Client()->m_LocalIDs[0]].m_aName, g_Config.m_PlayerName) ||

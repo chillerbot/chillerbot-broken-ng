@@ -11,7 +11,6 @@
 
 #include <game/voting.h>
 #include <game/client/component.h>
-#include <game/client/ui.h>
 
 
 // compnent to fetch keypresses, override all other input
@@ -126,7 +125,6 @@ class CMenus : public CComponent
 
 	// for settings
 	bool m_NeedRestartSkins;
-	bool m_NeedRestartGraphics;
 	bool m_NeedRestartUpdate;
 	bool m_NeedRestartDDNet;
 	bool m_NeedSendinfo;
@@ -274,7 +272,6 @@ class CMenus : public CComponent
 	void RenderSettingsDummyPlayer(CUIRect MainView);
 	void RenderSettingsTee(CUIRect MainView);
 	void RenderSettingsControls(CUIRect MainView);
-	void RenderSettingsGraphics(CUIRect MainView);
 	void RenderSettings(CUIRect MainView);
 
 	void SetActive(bool Active);
