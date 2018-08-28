@@ -53,7 +53,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 {
 	// needed interfaces
 	IEngine *m_pEngine;
-	IEditor *m_pEditor;
 	IEngineInput *m_pInput;
 	IEngineGraphics *m_pGraphics;
 	IGameClient *m_pGameClient;
@@ -97,7 +96,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	int m_SnapCrcErrors;
 	bool m_AutoScreenshotRecycle;
 	bool m_AutoStatScreenshotRecycle;
-	bool m_EditorActive;
 	bool m_ResortServerBrowser;
 
 	int m_AckGameTick[2];
@@ -376,7 +374,6 @@ public:
 	virtual void DemoSlice(const char *pDstPath, bool RemoveChat);
 
 	void RequestDDNetSrvList();
-	bool EditorHasUnsavedData() { return m_pEditor->HasUnsavedData(); }
 
 	virtual IFriends* Foes() {return &m_Foes; }
 };

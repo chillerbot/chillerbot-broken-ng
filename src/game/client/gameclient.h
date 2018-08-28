@@ -92,7 +92,6 @@ class CGameClient : public IGameClient
 	class IStorage *m_pStorage;
 	class IDemoPlayer *m_pDemoPlayer;
 	class IServerBrowser *m_pServerBrowser;
-	class IEditor *m_pEditor;
 	class IFriends *m_pFriends;
 	class IFriends *m_pFoes;
 	class IUpdater *m_pUpdater;
@@ -137,7 +136,6 @@ public:
 	class CRenderTools *RenderTools() { return &m_RenderTools; }
 	class CLayers *Layers() { return &m_Layers; };
 	class CCollision *Collision() { return &m_Collision; };
-	class IEditor *Editor() { return m_pEditor; }
 	class IFriends *Friends() { return m_pFriends; }
 	class IFriends *Foes() { return m_pFoes; }
 	class IUpdater *Updater() { return m_pUpdater; }
@@ -298,7 +296,6 @@ public:
 	virtual void OnMessage(int MsgId, CUnpacker *pUnpacker, bool IsDummy = 0);
 	virtual void OnNewSnapshot();
 	virtual void OnPredict();
-	virtual void OnActivateEditor();
 	virtual int OnSnapInput(int *pData);
 	virtual void OnShutdown();
 	virtual void OnEnterGame();

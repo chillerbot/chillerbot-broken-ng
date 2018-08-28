@@ -190,7 +190,6 @@ public:
 	virtual void DemoSlice(const char *pDstPath, bool RemoveChat) = 0;
 
 	virtual void RequestDDNetSrvList() = 0;
-	virtual bool EditorHasUnsavedData() = 0;
 
 	virtual IFriends* Foes() = 0;
 };
@@ -213,7 +212,6 @@ public:
 	virtual void OnConnected() = 0;
 	virtual void OnMessage(int MsgID, CUnpacker *pUnpacker, bool IsDummy = 0) = 0;
 	virtual void OnPredict() = 0;
-	virtual void OnActivateEditor() = 0;
 
 	virtual int OnSnapInput(int *pData) = 0;
 	virtual void SendDummyInfo(bool Start) = 0;

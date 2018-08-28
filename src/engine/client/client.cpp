@@ -19,7 +19,6 @@
 #include <engine/client.h>
 #include <engine/config.h>
 #include <engine/console.h>
-#include <engine/editor.h>
 #include <engine/engine.h>
 #include <engine/graphics.h>
 #include <engine/input.h>
@@ -261,7 +260,6 @@ CClient::CClient() : m_DemoPlayer(&m_SnapshotDelta)
 	m_DemoRecorder[1] = CDemoRecorder(&m_SnapshotDelta);
 	m_DemoRecorder[2] = CDemoRecorder(&m_SnapshotDelta);
 
-	m_pEditor = 0;
 	m_pInput = 0;
 	m_pGraphics = 0;
 	m_pGameClient = 0;
@@ -279,7 +277,6 @@ CClient::CClient() : m_DemoPlayer(&m_SnapshotDelta)
 	m_SnapCrcErrors = 0;
 	m_AutoScreenshotRecycle = false;
 	m_AutoStatScreenshotRecycle = false;
-	m_EditorActive = false;
 
 	m_AckGameTick[0] = -1;
 	m_AckGameTick[1] = -1;
@@ -2473,8 +2470,7 @@ void CClient::Update()
 	m_ResortServerBrowser = false;
 
 	// update gameclient
-	if(!m_EditorActive)
-		GameClient()->OnUpdate();
+	GameClient()->OnUpdate();
 
 	if(m_ReconnectTime > 0 && time_get() > m_ReconnectTime)
 	{
@@ -2534,7 +2530,6 @@ void CClient::InitInterfaces()
 {
 	// fetch interfaces
 	m_pEngine = Kernel()->RequestInterface<IEngine>();
-	m_pEditor = Kernel()->RequestInterface<IEditor>();
 	//m_pGraphics = Kernel()->RequestInterface<IEngineGraphics>();
 	m_pGameClient = Kernel()->RequestInterface<IGameClient>();
 	m_pInput = Kernel()->RequestInterface<IEngineInput>();
@@ -2545,8 +2540,6 @@ void CClient::InitInterfaces()
 	m_pUpdater = Kernel()->RequestInterface<IUpdater>();
 #endif
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
-
-	m_DemoEditor.Init(m_pGameClient->NetVersion(), &m_SnapshotDelta, m_pConsole, m_pStorage);
 
 	m_ServerBrowser.SetBaseInfo(&m_NetClient[2], m_pGameClient->NetVersion());
 
@@ -2632,9 +2625,6 @@ void CClient::Run()
 	// start refreshing addresses while we load
 	MasterServer()->RefreshAddresses(m_NetClient[0].NetType());
 
-	// init the editor
-	m_pEditor->Init();
-
 
 	// load data
 	if(!LoadData())
@@ -2656,9 +2646,6 @@ void CClient::Run()
 	//
 	m_FpsGraph.Init(0.0f, 200.0f);
 
-	// never start with the editor
-	g_Config.m_ClEditor = 0;
-
 	// process pending commands
 	m_pConsole->StoreCommands(false);
 
@@ -2668,7 +2655,6 @@ void CClient::Run()
 
 	bool LastD = false;
 	bool LastQ = false;
-	bool LastE = false;
 	bool LastG = false;
 
 	while (1)
@@ -2732,25 +2718,8 @@ void CClient::Run()
 		if(CtrlShiftKey(KEY_G, LastG))
 			g_Config.m_DbgGraphs ^= 1;
 
-		if(CtrlShiftKey(KEY_E, LastE))
-		{
-			g_Config.m_ClEditor = g_Config.m_ClEditor^1;
-			Input()->MouseModeRelative();
-		}
-
 		// render
 		{
-			if(g_Config.m_ClEditor)
-			{
-				if(!m_EditorActive)
-				{
-					Input()->MouseModeRelative();
-					GameClient()->OnActivateEditor();
-					m_EditorActive = true;
-				}
-			}
-			else if(m_EditorActive)
-				m_EditorActive = false;
 
 			Update();
 			int64 Now = time_get();
@@ -2775,25 +2744,13 @@ void CClient::Run()
 				{
 					if((m_RenderFrames%10) == 0)
 					{
-						if(!m_EditorActive)
-							Render();
-						else
-						{
-							m_pEditor->UpdateAndRender();
-							DebugRender();
-						}
+						DebugRender();
 						m_pGraphics->Swap();
 					}
 				}
 				else
 				{
-					if(!m_EditorActive)
-						Render();
-					else
-					{
-						m_pEditor->UpdateAndRender();
-						DebugRender();
-					}
+					Render();
 					m_pGraphics->Swap();
 				}
 				Input()->NextFrame();
@@ -3401,7 +3358,6 @@ int main(int argc, const char **argv) // ignore_convention
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IEngineMasterServer*>(pEngineMasterServer)); // register as both
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(static_cast<IMasterServer*>(pEngineMasterServer));
 
-		RegisterFail = RegisterFail || !pKernel->RegisterInterface(CreateEditor());
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(CreateGameClient());
 		RegisterFail = RegisterFail || !pKernel->RegisterInterface(pStorage);
 

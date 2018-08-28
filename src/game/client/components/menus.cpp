@@ -12,7 +12,6 @@
 #include <base/vmath.h>
 
 #include <engine/config.h>
-#include <engine/editor.h>
 #include <engine/engine.h>
 #include <engine/friends.h>
 #include <engine/graphics.h>
@@ -739,11 +738,6 @@ int CMenus::RenderMenubar(CUIRect r)
 
 	Box.VSplitRight(10.0f, &Box, &Button);
 	Box.VSplitRight(30.0f, &Box, &Button);
-	static int s_EditorButton=0;
-	if(DoButton_MenuTab(&s_EditorButton, Localize("✎"), 0, &Button, CUI::CORNER_T))
-	{
-		g_Config.m_ClEditor = 1;
-	}
 
 	if(NewPage != -1)
 	{
@@ -1154,12 +1148,6 @@ int CMenus::Render()
 			// additional info
 			Box.HSplitTop(10.0f, 0, &Box);
 			Box.VMargin(20.f/UI()->Scale(), &Box);
-			if(m_pClient->Editor()->HasUnsavedData())
-			{
-				char aBuf[256];
-				str_format(aBuf, sizeof(aBuf), "%s\n%s", Localize("There's an unsaved map in the editor, you might want to save it before you quit the game."), Localize("Quit anyway?"));
-				UI()->DoLabelScaled(&Box, aBuf, 20.f, -1, Part.w-20.0f);
-			}
 
 			// buttons
 			Part.VMargin(80.0f, &Part);

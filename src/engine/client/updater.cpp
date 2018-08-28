@@ -269,7 +269,7 @@ void CUpdater::CommitUpdate()
 		ReplaceClient();
 	if(m_ServerUpdate)
 		ReplaceServer();
-	if(m_pClient->State() == IClient::STATE_ONLINE || m_pClient->EditorHasUnsavedData())
+	if(m_pClient->State() == IClient::STATE_ONLINE)
 		m_State = NEED_RESTART;
 	else
 	{
