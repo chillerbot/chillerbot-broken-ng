@@ -3,6 +3,28 @@
 #ifndef ENGINE_CLIENT_CLIENT_H
 #define ENGINE_CLIENT_CLIENT_H
 
+class CGraph
+{
+public:
+	enum
+	{
+		// restrictions: Must be power of two
+		MAX_VALUES = 128,
+	};
+
+	float m_Min, m_Max;
+	float m_aValues[MAX_VALUES];
+	float m_aColors[MAX_VALUES][3];
+	int m_Index;
+
+	void Init(float Min, float Max);
+
+	void ScaleMax();
+	void ScaleMin();
+
+	void Add(float v, float r, float g, float b);
+};
+
 class CSmoothTime
 {
 	int64 m_Snap;
@@ -10,6 +32,7 @@ class CSmoothTime
 	int64 m_Target;
 
 	int m_SpikeCounter;
+	CGraph m_Graph;
 
 	float m_aAdjustSpeed[2]; // 0 = down, 1 = up
 public:
@@ -19,7 +42,7 @@ public:
 	int64 Get(int64 Now);
 
 	void UpdateInt(int64 Target);
-	void Update(int64 Target, int TimeLeft, int AdjustDirection);
+	void Update(CGraph *pGraph, int64 Target, int TimeLeft, int AdjustDirection);
 };
 
 
@@ -27,7 +50,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 {
 	// needed interfaces
 	IEngine *m_pEngine;
-	IEngineInput *m_pInput;
 	IGameClient *m_pGameClient;
 	IEngineMap *m_pMap;
 	IConsole *m_pConsole;
@@ -120,6 +142,11 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	bool m_LastDummy2;
 	CNetObj_PlayerInput HammerInput;
 
+	// graphs
+	CGraph m_InputtimeMarginGraph;
+	CGraph m_GametimeMarginGraph;
+	CGraph m_FpsGraph;
+
 	// the game snapshots are modifiable by the game
 	class CSnapshotStorage m_SnapshotStorage[2];
 	CSnapshotStorage::CHolder *m_aSnapshots[2][NUM_SNAPSHOT_TYPES];
@@ -161,7 +188,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 
 public:
 	IEngine *Engine() { return m_pEngine; }
-	IEngineInput *Input() { return m_pInput; }
 	IGameClient *GameClient() { return m_pGameClient; }
 	IEngineMasterServer *MasterServer() { return m_pMasterServer; }
 	IStorage *Storage() { return m_pStorage; }

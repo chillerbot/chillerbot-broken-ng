@@ -20,7 +20,6 @@
 #include <engine/config.h>
 #include <engine/console.h>
 #include <engine/engine.h>
-#include <engine/input.h>
 #include <engine/keys.h>
 #include <engine/map.h>
 #include <engine/masterserver.h>
@@ -66,6 +65,44 @@
 #endif
 
 
+void CGraph::Init(float Min, float Max)
+{
+	m_Min = Min;
+	m_Max = Max;
+	m_Index = 0;
+}
+
+void CGraph::ScaleMax()
+{
+	int i = 0;
+	m_Max = 0;
+	for (i = 0; i < MAX_VALUES; i++)
+	{
+		if (m_aValues[i] > m_Max)
+			m_Max = m_aValues[i];
+	}
+}
+
+void CGraph::ScaleMin()
+{
+	int i = 0;
+	m_Min = m_Max;
+	for (i = 0; i < MAX_VALUES; i++)
+	{
+		if (m_aValues[i] < m_Min)
+			m_Min = m_aValues[i];
+	}
+}
+
+void CGraph::Add(float v, float r, float g, float b)
+{
+	m_Index = (m_Index + 1)&(MAX_VALUES - 1);
+	m_aValues[m_Index] = v;
+	m_aColors[m_Index][0] = r;
+	m_aColors[m_Index][1] = g;
+	m_aColors[m_Index][2] = b;
+}
+
 void CSmoothTime::Init(int64 Target)
 {
 	m_Snap = time_get();
@@ -109,7 +146,7 @@ void CSmoothTime::UpdateInt(int64 Target)
 	m_Target = Target;
 }
 
-void CSmoothTime::Update(int64 Target, int TimeLeft, int AdjustDirection)
+void CSmoothTime::Update(CGraph *pGraph, int64 Target, int TimeLeft, int AdjustDirection)
 {
 	int UpdateTimer = 1;
 
@@ -129,9 +166,11 @@ void CSmoothTime::Update(int64 Target, int TimeLeft, int AdjustDirection)
 		{
 			// ignore this ping spike
 			UpdateTimer = 0;
+			pGraph->Add(TimeLeft, 1, 1, 0);
 		}
 		else
 		{
+			pGraph->Add(TimeLeft, 1, 0, 0);
 			if(m_aAdjustSpeed[AdjustDirection] < 30.0f)
 				m_aAdjustSpeed[AdjustDirection] *= 2.0f;
 		}
@@ -140,6 +179,8 @@ void CSmoothTime::Update(int64 Target, int TimeLeft, int AdjustDirection)
 	{
 		if(m_SpikeCounter)
 			m_SpikeCounter--;
+
+		pGraph->Add(TimeLeft, 0, 1, 0);
 
 		m_aAdjustSpeed[AdjustDirection] *= 0.95f;
 		if(m_aAdjustSpeed[AdjustDirection] < 2.0f)
@@ -157,7 +198,6 @@ CClient::CClient() : m_DemoPlayer(&m_SnapshotDelta)
 	m_DemoRecorder[1] = CDemoRecorder(&m_SnapshotDelta);
 	m_DemoRecorder[2] = CDemoRecorder(&m_SnapshotDelta);
 
-	m_pInput = 0;
 	m_pGameClient = 0;
 	m_pMap = 0;
 	m_pConsole = 0;
@@ -1461,7 +1501,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 			}
 
 			if(Target)
-				m_PredictedTime.Update(Target, TimeLeft, 1);
+				m_PredictedTime.Update(&m_InputtimeMarginGraph, Target, TimeLeft, 1);
 		}
 		else if(Msg == NETMSG_SNAP || Msg == NETMSG_SNAPSINGLE || Msg == NETMSG_SNAPEMPTY)
 		{
@@ -1657,7 +1697,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 						int64 Now = m_GameTime[g_Config.m_ClDummy].Get(time_get());
 						int64 TickStart = GameTick*time_freq()/50;
 						int64 TimeLeft = (TickStart-Now)*1000 / time_freq();
-						m_GameTime[g_Config.m_ClDummy].Update((GameTick-1)*time_freq()/50, TimeLeft, 0);
+						m_GameTime[g_Config.m_ClDummy].Update(&m_GametimeMarginGraph, (GameTick-1)*time_freq()/50, TimeLeft, 0);
 					}
 
 					if(m_ReceivedSnapshots[g_Config.m_ClDummy] > 50 && !m_TimeoutCodeSent[g_Config.m_ClDummy])
@@ -1894,7 +1934,7 @@ void CClient::ProcessServerPacketDummy(CNetChunk *pPacket)
 						int64 Now = m_GameTime[!g_Config.m_ClDummy].Get(time_get());
 						int64 TickStart = GameTick*time_freq()/50;
 						int64 TimeLeft = (TickStart-Now)*1000 / time_freq();
-						m_GameTime[!g_Config.m_ClDummy].Update((GameTick-1)*time_freq()/50, TimeLeft, 0);
+						m_GameTime[!g_Config.m_ClDummy].Update(&m_GametimeMarginGraph, (GameTick-1)*time_freq()/50, TimeLeft, 0);
 					}
 
 					// ack snapshot
@@ -2326,7 +2366,6 @@ void CClient::InitInterfaces()
 	// fetch interfaces
 	m_pEngine = Kernel()->RequestInterface<IEngine>();
 	m_pGameClient = Kernel()->RequestInterface<IGameClient>();
-	m_pInput = Kernel()->RequestInterface<IEngineInput>();
 	m_pMap = Kernel()->RequestInterface<IEngineMap>();
 	m_pMasterServer = Kernel()->RequestInterface<IEngineMasterServer>();
 	m_pFetcher = Kernel()->RequestInterface<IFetcher>();
@@ -2384,9 +2423,6 @@ void CClient::Run()
 		}
 	}
 
-	// init the input
-	Input()->Init();
-
 	// start refreshing addresses while we load
 	MasterServer()->RefreshAddresses(m_NetClient[0].NetType());
 
@@ -2415,8 +2451,6 @@ void CClient::Run()
 #if defined(CONF_FAMILY_UNIX)
 	m_Fifo.Init(m_pConsole, g_Config.m_ClInputFifo, CFGFLAG_CLIENT);
 #endif
-
-	bool LastQ = false;
 
 	while (1)
 	{
@@ -2468,16 +2502,8 @@ void CClient::Run()
 #endif
 		*/
 
-		// panic quit button
-		/*
-		if(CtrlShiftKey(KEY_Q, LastQ))
-		{
-			Quit();
-			break;
-		}
-		*/
-
 		// render
+		if (true) // it gets crashed in this scope probably
 		{
 
 			Update();
@@ -2498,16 +2524,8 @@ void CClient::Run()
 
 				
 				Render();
-				Input()->NextFrame();
-			}
-			if(Input()->VideoRestartNeeded())
-			{
-				LoadData();
-				GameClient()->OnInit();
 			}
 		}
-
-		AutoScreenshot_Cleanup();
 
 		// check conditions
 		if(State() == IClient::STATE_QUITING)
@@ -2544,15 +2562,6 @@ void CClient::Run()
 
 bool CClient::CtrlShiftKey(int Key, bool &Last)
 {
-	/*
-	if(Input()->KeyIsPressed(KEY_LCTRL) && Input()->KeyIsPressed(KEY_LSHIFT) && !Last && Input()->KeyIsPressed(Key))
-	{
-		Last = true;
-		return true;
-	}
-	else if (Last && !Input()->KeyIsPressed(Key))
-		Last = false;
-	*/
 	return false;
 }
 
