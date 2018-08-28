@@ -14,7 +14,6 @@ if target_arch then
 end
 
 Import("configure.lua")
-Import("other/sdl/sdl.lua")
 Import("other/freetype/freetype.lua")
 Import("other/curl/curl.lua")
 Import("other/opus/opusfile.lua")
@@ -29,7 +28,6 @@ config:Add(OptTestCompileC("stackprotector", "int main(){return 0;}", "-fstack-p
 config:Add(OptTestCompileC("minmacosxsdk", "int main(){return 0;}", "-mmacosx-version-min=10.7 -isysroot /Developer/SDKs/MacOSX10.7.sdk"))
 config:Add(OptTestCompileC("macosxppc", "int main(){return 0;}", "-arch ppc"))
 config:Add(OptLibrary("zlib", "zlib.h", false))
-config:Add(SDL.OptFind("sdl", true))
 config:Add(FreeType.OptFind("freetype", true))
 config:Add(Curl.OptFind("curl", true))
 config:Add(Opusfile.OptFind("opusfile", true))
@@ -148,7 +146,6 @@ server_sql_depends = {}
 if family == "windows" then
 	if platform == "win32" then
 		table.insert(client_depends, CopyToDirectory(".", "other/freetype/lib32/freetype.dll"))
-		table.insert(client_depends, CopyToDirectory(".", "other/sdl/lib32/SDL2.dll"))
 
 		table.insert(client_depends, CopyToDirectory(".", "other/curl/windows/lib32/libcurl.dll"))
 		table.insert(client_depends, CopyToDirectory(".", "other/curl/windows/lib32/libeay32.dll"))
@@ -163,7 +160,6 @@ if family == "windows" then
 		table.insert(client_depends, CopyToDirectory(".", "other/opus/windows/lib32/libopusfile-0.dll"))
 	else
 		table.insert(client_depends, CopyToDirectory(".", "other/freetype/lib64/freetype.dll"))
-		table.insert(client_depends, CopyToDirectory(".", "other/sdl/lib64/SDL2.dll"))
 
 		table.insert(client_depends, CopyToDirectory(".", "other/curl/windows/lib64/libcurl.dll"))
 		table.insert(client_depends, CopyToDirectory(".", "other/curl/windows/lib64/libeay32.dll"))
@@ -337,7 +333,6 @@ function build(settings)
 		end
 	end
 
-	config.sdl:Apply(client_settings)
 	config.freetype:Apply(client_settings)
 	config.curl:Apply(client_settings)
 	config.opusfile:Apply(client_settings)

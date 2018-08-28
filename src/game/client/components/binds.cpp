@@ -84,6 +84,7 @@ const char *CBinds::GetKey(const char *pBindStr)
 
 void CBinds::SetDefaults()
 {
+	/*
 	// set default key bindings
 	UnbindAll();
 	Bind(KEY_F1, "toggle_local_console");
@@ -144,6 +145,7 @@ void CBinds::SetDefaults()
 
 	if(g_Config.m_ClDDRaceBinds)
 		SetDDRaceBinds(false);
+	*/
 }
 
 void CBinds::OnConsoleInit()
@@ -272,6 +274,7 @@ void CBinds::ConfigSaveCallback(IConfig *pConfig, void *pUserData)
 
 void CBinds::SetDDRaceBinds(bool FreeOnly)
 {
+	/*
 	if(!FreeOnly)
 	{
 		Bind(KEY_KP_PLUS, "zoom+");
@@ -369,4 +372,5 @@ void CBinds::SetDDRaceBinds(bool FreeOnly)
 	}
 
 	g_Config.m_ClDDRaceBindsSet = 1;
+	*/
 }

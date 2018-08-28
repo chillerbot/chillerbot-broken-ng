@@ -2361,7 +2361,6 @@ void CClient::Run()
 
 	srand(time(NULL));
 
-
 	// open socket
 	{
 		NETADDR BindAddr;
@@ -2461,18 +2460,22 @@ void CClient::Run()
 		}
 
 		// update input
+		/*
 		if(Input()->Update())
 			break;	// SDL_QUIT
 #if !defined(CONF_PLATFORM_MACOSX) && !defined(__ANDROID__)
 		Updater()->Update();
 #endif
+		*/
 
 		// panic quit button
+		/*
 		if(CtrlShiftKey(KEY_Q, LastQ))
 		{
 			Quit();
 			break;
 		}
+		*/
 
 		// render
 		{
@@ -2480,7 +2483,7 @@ void CClient::Run()
 			Update();
 			int64 Now = time_get();
 
-			if(true)
+			if(false)
 			{
 				m_RenderFrames++;
 
@@ -2493,17 +2496,8 @@ void CClient::Run()
 
 				m_LastRenderTime = Now;
 
-				if(g_Config.m_DbgStress)
-				{
-					if((m_RenderFrames%10) == 0)
-					{
-						DebugRender();
-					}
-				}
-				else
-				{
-					Render();
-				}
+				
+				Render();
 				Input()->NextFrame();
 			}
 			if(Input()->VideoRestartNeeded())
@@ -2550,6 +2544,7 @@ void CClient::Run()
 
 bool CClient::CtrlShiftKey(int Key, bool &Last)
 {
+	/*
 	if(Input()->KeyIsPressed(KEY_LCTRL) && Input()->KeyIsPressed(KEY_LSHIFT) && !Last && Input()->KeyIsPressed(Key))
 	{
 		Last = true;
@@ -2557,7 +2552,7 @@ bool CClient::CtrlShiftKey(int Key, bool &Last)
 	}
 	else if (Last && !Input()->KeyIsPressed(Key))
 		Last = false;
-
+	*/
 	return false;
 }
 
@@ -3043,29 +3038,16 @@ int main(int argc, const char **argv) // ignore_convention
 	pClient->InitInterfaces();
 
 	// execute config file
-	IOHANDLE File = pStorage->OpenFile(CONFIG_FILE, IOFLAG_READ, IStorage::TYPE_ALL);
+	IOHANDLE File = pStorage->OpenFile("chillerbot.cfg", IOFLAG_READ, IStorage::TYPE_ALL);
 	if(File)
 	{
 		io_close(File);
 		//pConsole->ExecuteFile(CONFIG_FILE);
+		pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "console", "x");
 		pConsole->ExecuteFile("chillerbot.cfg");
+		pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "console", "x");
 	}
-	else // fallback
-	{
-		pConsole->ExecuteFile("settings.cfg");
-	}
-
-	// execute autoexec file
-	File = pStorage->OpenFile(AUTOEXEC_CLIENT_FILE, IOFLAG_READ, IStorage::TYPE_ALL);
-	if(File)
-	{
-		io_close(File);
-		pConsole->ExecuteFile(AUTOEXEC_CLIENT_FILE);
-	}
-	else // fallback
-	{
-		pConsole->ExecuteFile(AUTOEXEC_FILE);
-	}
+	pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "console", "x");
 
 	if(g_Config.m_ClConfigVersion < 1)
 	{
@@ -3083,11 +3065,6 @@ int main(int argc, const char **argv) // ignore_convention
 		pConsole->ParseArguments(argc-1, &argv[1]); // ignore_convention
 
 	pClient->Engine()->InitLogfile();
-
-#if defined(CONF_FAMILY_WINDOWS)
-	if(!g_Config.m_ClShowConsole)
-		FreeConsole();
-#endif
 
 	// For XOpenIM in SDL2: https://bugzilla.libsdl.org/show_bug.cgi?id=3102
 	//setlocale(LC_ALL, "");

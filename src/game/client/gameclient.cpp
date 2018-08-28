@@ -493,7 +493,7 @@ void CGameClient::OnRender()
 		m_All.m_paComponents[i]->OnRender();
 
 	// clear all events/input for this frame
-	Input()->Clear();
+	//Input()->Clear();
 
 	// clear new tick flags
 	m_NewTick = false;
