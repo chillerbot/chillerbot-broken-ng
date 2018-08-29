@@ -226,6 +226,21 @@ int CControls::SnapInput(int *pData)
 			m_InputData[g_Config.m_ClDummy].m_TargetY = (int)(cosf(t*3)*100.0f);
 		}
 
+		// ChillerDragon moves
+		if (GameClient()->m_Snap.m_pLocalCharacter)
+		{
+			m_InputData[g_Config.m_ClDummy].m_Jump = 0;
+			m_InputData[g_Config.m_ClDummy].m_Direction = -1;
+			if (GameClient()->m_Snap.m_pLocalCharacter->m_X > 470 * 32)
+			{
+				GameClient()->SendKill(g_Config.m_ClDummy);
+			}
+			if (GameClient()->m_Snap.m_pLocalCharacter->m_X > 454 * 32 && GameClient()->m_Snap.m_pLocalCharacter->m_X < 458 * 32)
+			{
+				m_InputData[g_Config.m_ClDummy].m_Jump = 1;
+			}
+		}
+
 		// check if we need to send input
 		if(m_InputData[g_Config.m_ClDummy].m_Direction != m_LastData[g_Config.m_ClDummy].m_Direction) Send = true;
 		else if(m_InputData[g_Config.m_ClDummy].m_Jump != m_LastData[g_Config.m_ClDummy].m_Jump) Send = true;
