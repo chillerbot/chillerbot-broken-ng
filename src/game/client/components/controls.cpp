@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <base/tl/sorted_array.h>
+#include <stdio.h>
 
 #include <base/math.h>
 
@@ -137,6 +138,59 @@ void CControls::OnMessage(int Msg, void *pRawMsg)
 	}
 }
 
+void CControls::StartHook(int pre, int hook)
+{
+    m_pre_hook_tick = pre;
+    m_hook_tick = hook;
+}
+
+void CControls::DoHook()
+{
+    if (m_pre_hook_tick > 0)
+    {
+        m_InputData[g_Config.m_ClDummy].m_Hook = 0;
+        m_pre_hook_tick--;
+        return;
+    }
+
+    if (m_hook_tick > 0)
+    {
+        m_InputData[g_Config.m_ClDummy].m_Hook = 1;
+        m_hook_tick--;
+    }
+}
+
+void CControls::StartJump(int pre, int jump)
+{
+    if (m_pre_jump_tick > 0 || m_jump_tick > 0)
+        return;
+    m_pre_jump_tick = pre;
+    m_jump_tick = jump;
+}
+
+void CControls::DoJump()
+{
+    if (m_pre_jump_tick > 0)
+    {
+        //printf("pre jump\n");
+        m_InputData[g_Config.m_ClDummy].m_Jump = 0;
+        m_pre_jump_tick--;
+        return;
+    }
+
+    if (m_jump_tick > 0)
+    {
+        //printf("jump\n");
+        m_InputData[g_Config.m_ClDummy].m_Jump = 1;
+        m_jump_tick--;
+    }
+}
+
+void CControls::DoFire()
+{
+    m_InputData[g_Config.m_ClDummy].m_Fire++;
+}
+
 int CControls::SnapInput(int *pData)
 {
 	static int64 LastSendTime = 0;
@@ -227,17 +281,38 @@ int CControls::SnapInput(int *pData)
 		}
 
 		// ChillerDragon moves
-		if (GameClient()->m_Snap.m_pLocalCharacter)
+		if (GameClient()->m_Snap.m_pLocalCharacter) //fng movebot
 		{
+			float t = Client()->LocalTime();
+			mem_zero(&m_InputData[g_Config.m_ClDummy], sizeof(m_InputData[0]));
+			m_InputData[g_Config.m_ClDummy].m_TargetX = (int)(sinf(t*3)*100.0f);
+			m_InputData[g_Config.m_ClDummy].m_TargetY = (int)(cosf(t*3)*100.0f);
+			//m_InputData[g_Config.m_ClDummy].m_Fire = ((int)(t*10));
+            DoFire();
+			m_InputData[g_Config.m_ClDummy].m_Direction = 0;
 			m_InputData[g_Config.m_ClDummy].m_Jump = 0;
-			m_InputData[g_Config.m_ClDummy].m_Direction = -1;
-			if (GameClient()->m_Snap.m_pLocalCharacter->m_X > 470 * 32)
+            DoJump();
+            DoHook();
+			if (GameClient()->m_Snap.m_pLocalCharacter->m_X < 128 * 32) //red base
 			{
-				GameClient()->SendKill(g_Config.m_ClDummy);
+                m_InputData[g_Config.m_ClDummy].m_Direction = 1;
+				//GameClient()->SendKill(g_Config.m_ClDummy);
 			}
-			if (GameClient()->m_Snap.m_pLocalCharacter->m_X > 454 * 32 && GameClient()->m_Snap.m_pLocalCharacter->m_X < 458 * 32)
+			if (GameClient()->m_Snap.m_pLocalCharacter->m_X > 170 * 32) //blue base
 			{
+                m_InputData[g_Config.m_ClDummy].m_Direction = -1;
 				m_InputData[g_Config.m_ClDummy].m_Jump = 1;
+			}
+
+
+			if (GameClient()->m_Snap.m_pLocalCharacter->m_VelX < 0.5f)
+			{
+                StartJump(50, 100);
+                /*
+                m_InputData[g_Config.m_ClDummy].m_Jump = 1;
+                if ((int)t % 5 == 0)
+                    m_InputData[g_Config.m_ClDummy].m_Jump = 0;
+                */
 			}
 		}
 

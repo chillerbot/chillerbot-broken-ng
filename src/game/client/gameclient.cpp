@@ -666,6 +666,7 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, bool IsDummy)
 	if(MsgId == NETMSGTYPE_SV_READYTOENTER)
 	{
 		Client()->EnterGame();
+        SendSwitchTeam(1); //chillerbot-ng auto team red
 	}
 	else if (MsgId == NETMSGTYPE_SV_EMOTICON)
 	{

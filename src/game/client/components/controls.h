@@ -42,5 +42,19 @@ public:
 	int SnapInput(int *pData);
 	void ClampMousePos();
 	void ResetInput(int dummy);
+
+    //ChillerDragon
+    //hook
+    void DoHook();
+    void StartHook(int pre, int hook);
+    int m_hook_tick;
+    int m_pre_hook_tick;
+    //jump
+    void DoJump();
+    void StartJump(int pre, int jump);
+    int m_jump_tick;
+    int m_pre_jump_tick;
+    //fire
+    void DoFire();
 };
 #endif

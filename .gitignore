@@ -19,6 +19,7 @@ map_version*
 packetgen*
 teeworlds*
 teeworlds_srv*
+chillerbot-ng
 serverlaunch_*
 tileset_border*
 twping*
