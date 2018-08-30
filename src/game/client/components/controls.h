@@ -56,5 +56,7 @@ public:
     int m_pre_jump_tick;
     //fire
     void DoFire();
+	//hax
+	vec2 GetClosestPlayerPos(vec2 Pos, float Radius, const CNetObj_Character *pNotThis);
 };
 #endif

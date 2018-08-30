@@ -191,6 +191,47 @@ void CControls::DoFire()
     m_InputData[g_Config.m_ClDummy].m_Fire++;
 }
 
+vec2 CControls::GetClosestPlayerPos(vec2 Pos, float Radius, const CNetObj_Character *pNotThis)
+{
+	float ClosestRange = Radius * 2;
+	vec2 ClosestPos = vec2(2, 2);
+
+	for (int p = 0; p < 4; p++)
+	{
+		for (int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if (!m_pClient->m_Snap.m_aCharacters[i].m_Active)
+				continue;
+			if (pNotThis == &m_pClient->m_Snap.m_aCharacters[i].m_Cur)
+				continue;
+
+			const void *pPrevInfo = Client()->SnapFindItem(IClient::SNAP_PREV, NETOBJTYPE_PLAYERINFO, i);
+			const void *pInfo = Client()->SnapFindItem(IClient::SNAP_CURRENT, NETOBJTYPE_PLAYERINFO, i);
+
+			if (pPrevInfo && pInfo)
+			{
+				bool Local = ((const CNetObj_PlayerInfo *)pInfo)->m_Local != 0;
+				if ((p % 2) == 0 && Local) continue;
+				if ((p % 2) == 1 && !Local) continue;
+
+				//CNetObj_Character Char = m_pClient->m_Snap.m_aCharacters[i].m_Cur;
+				ClosestPos = m_pClient->m_Snap.m_aCharacters[i].m_Position;
+				float Len = distance(m_pClient->m_Snap.m_aCharacters[i].m_Position, Pos);
+				if (Len < Radius)
+				{
+					if (Len < ClosestRange)
+					{
+						ClosestRange = Len;
+						ClosestPos = m_pClient->m_Snap.m_aCharacters[i].m_Position;
+						printf("new len=%.2f new closest pos%.2f/%.2f clientID=%d \n", Len, ClosestPos.x, ClosestPos.y, m_pClient->m_Snap.m_paPlayerInfos[i]->m_ClientID);
+					}
+				}
+			}
+		}
+	}
+	return ClosestPos;
+}
+
 int CControls::SnapInput(int *pData)
 {
 	static int64 LastSendTime = 0;
@@ -281,38 +322,47 @@ int CControls::SnapInput(int *pData)
 		}
 
 		// ChillerDragon moves
-		if (GameClient()->m_Snap.m_pLocalCharacter) //fng movebot
+		if (GameClient()->m_Snap.m_pLocalCharacter)
 		{
-			float t = Client()->LocalTime();
-			mem_zero(&m_InputData[g_Config.m_ClDummy], sizeof(m_InputData[0]));
-			m_InputData[g_Config.m_ClDummy].m_TargetX = (int)(sinf(t*3)*100.0f);
-			m_InputData[g_Config.m_ClDummy].m_TargetY = (int)(cosf(t*3)*100.0f);
-			//m_InputData[g_Config.m_ClDummy].m_Fire = ((int)(t*10));
-            DoFire();
-			m_InputData[g_Config.m_ClDummy].m_Direction = 0;
-			m_InputData[g_Config.m_ClDummy].m_Jump = 0;
-            DoJump();
-            DoHook();
-			if (GameClient()->m_Snap.m_pLocalCharacter->m_X < 128 * 32) //red base
+			if (g_Config.m_ClMoveBot == 1) //fng movebot
 			{
-                m_InputData[g_Config.m_ClDummy].m_Direction = 1;
-				//GameClient()->SendKill(g_Config.m_ClDummy);
+				float t = Client()->LocalTime();
+				mem_zero(&m_InputData[g_Config.m_ClDummy], sizeof(m_InputData[0]));
+				m_InputData[g_Config.m_ClDummy].m_TargetX = (int)(sinf(t * 3)*100.0f);
+				m_InputData[g_Config.m_ClDummy].m_TargetY = (int)(cosf(t * 3)*100.0f);
+				//m_InputData[g_Config.m_ClDummy].m_Fire = ((int)(t*10));
+				DoFire();
+				m_InputData[g_Config.m_ClDummy].m_Direction = 0;
+				m_InputData[g_Config.m_ClDummy].m_Jump = 0;
+				DoJump();
+				DoHook();
+				if (GameClient()->m_Snap.m_pLocalCharacter->m_X < 128 * 32) //red base
+				{
+					m_InputData[g_Config.m_ClDummy].m_Direction = 1;
+					//GameClient()->SendKill(g_Config.m_ClDummy);
+				}
+				if (GameClient()->m_Snap.m_pLocalCharacter->m_X > 170 * 32) //blue base
+				{
+					m_InputData[g_Config.m_ClDummy].m_Direction = -1;
+					m_InputData[g_Config.m_ClDummy].m_Jump = 1;
+				}
+				if (GameClient()->m_Snap.m_pLocalCharacter->m_VelX < 0.5f)
+				{
+					StartJump(50, 100);
+				}
 			}
-			if (GameClient()->m_Snap.m_pLocalCharacter->m_X > 170 * 32) //blue base
+			else if (g_Config.m_ClMoveBot == 2) //test aimbot
 			{
-                m_InputData[g_Config.m_ClDummy].m_Direction = -1;
-				m_InputData[g_Config.m_ClDummy].m_Jump = 1;
-			}
+				/*
+				vec2 pos1 = vec2(2, 2);
+				vec2 pos2 = vec2(3, 3);
+				float dist = distance(pos1, pos2);
+				printf("dist %.2f\n", dist);
+				*/
 
-
-			if (GameClient()->m_Snap.m_pLocalCharacter->m_VelX < 0.5f)
-			{
-                StartJump(50, 100);
-                /*
-                m_InputData[g_Config.m_ClDummy].m_Jump = 1;
-                if ((int)t % 5 == 0)
-                    m_InputData[g_Config.m_ClDummy].m_Jump = 0;
-                */
+				//vec2 own = vec2(GameClient()->m_Snap.m_pLocalCharacter->m_X, GameClient()->m_Snap.m_pLocalCharacter->m_Y);
+				//vec2 pos = GetClosestPlayerPos(own, 99999.9f, GameClient()->m_Snap.m_pLocalCharacter);
+				//printf("enemy at %.2f/%.2f\n", pos.x, pos.y);
 			}
 		}
 
