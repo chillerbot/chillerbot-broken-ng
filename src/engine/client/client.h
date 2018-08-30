@@ -351,6 +351,12 @@ public:
 	void ToggleWindowBordered();
 	void ToggleWindowVSync();
 
+	// ChillerDragon (chillerbot-ng)
+
+	void ChillerIngameTick();
+	void SendChat(int Team, const char * pLine);
+	int64 NextChatTick;
+
 	// DDRace
 
 	virtual const char* GetCurrentMap();

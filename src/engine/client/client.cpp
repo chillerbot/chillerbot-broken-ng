@@ -2503,7 +2503,7 @@ void CClient::Run()
 		*/
 
 		// render
-		if (true) // it gets crashed in this scope probably
+		if (true)
 		{
 
 			Update();
@@ -2528,8 +2528,14 @@ void CClient::Run()
 		}
 
 		// check conditions
-		if(State() == IClient::STATE_QUITING)
+		if (State() == IClient::STATE_QUITING)
+		{
 			break;
+		}
+		else if (State() == IClient::STATE_ONLINE)
+		{
+			//ChillerIngameTick();
+		}
 
 #if defined(CONF_FAMILY_UNIX)
 		m_Fifo.Update();
@@ -2911,6 +2917,50 @@ void CClient::ToggleWindowVSync()
 
 }
 
+void CClient::ChillerIngameTick()
+{
+	if (time_get() > NextChatTick)
+	{
+		NextChatTick = m_LocalTime + time_freq() * 20; //last value is seconds i hope
+		if (rand() % 4 == 0)
+		{
+			SendChat(0, "/acc_logout");
+		}
+		else if (rand() % 10 == 0)
+		{
+			SendChat(0, "/register testac44 44c 44c");
+		}
+		else
+		{
+			int rand_index = rand() % 21;
+			const char aMsg[21][128] = {
+				"/login testac44",
+				"/login testac44 44c",
+				"/login testac45 45c",
+				"/login test a a",
+				"/login test2 test2 test2",
+				"/login 12370123 1820939012 01238128390",
+				"/login /%$&/&/()²³²³{ baba baba",
+				"/login mister wister wister",
+				"/login yolo yolo yolo",
+				"/login na,me name name",
+				"/login test test test",
+				"/login vag vag vag",
+				"/login login login password",
+				"/login login login login",
+				"/login login pass pass",
+				"/login test test test1",
+				"/login xxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				"/login ü xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				"/login ;test ;test ;test",
+				"/login tst11 tst22 tst22;login tst11 tst22",
+				"7login ;test ;test /help"
+			};
+			SendChat(0, aMsg[rand_index]);
+		}
+	}
+}
+
 void CClient::ConchainWindowVSync(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
 
@@ -3150,4 +3200,16 @@ int CClient::GetPredictionTime()
 {
 	int64 Now = time_get();
 	return (int)((m_PredictedTime.Get(Now)-m_GameTime[g_Config.m_ClDummy].Get(Now))*1000/(float)time_freq());
+}
+
+void CClient::SendChat(int Team, const char * pLine)
+{
+	// send chat message
+	CNetMsg_Cl_Say Msg;
+	Msg.m_Team = Team;
+	Msg.m_pMessage = pLine;
+
+	CMsgPacker Packer(Msg.MsgID());
+	if (!Msg.Pack(&Packer))
+		SendMsgEx(&Packer, MSGFLAG_VITAL, false);
 }
