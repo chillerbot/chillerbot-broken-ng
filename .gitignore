@@ -8,6 +8,7 @@ src/game/generated
 SDL.dll
 SDL2.dll
 freetype.dll
+servers.cfg
 
 crapnet*
 config_store*
