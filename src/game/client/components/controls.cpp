@@ -334,7 +334,7 @@ int CControls::SnapInput(int *pData)
 				mem_zero(&m_InputData[g_Config.m_ClDummy], sizeof(m_InputData[0]));
 				m_InputData[g_Config.m_ClDummy].m_TargetX = (int)(sinf(t * 3)*100.0f);
 				m_InputData[g_Config.m_ClDummy].m_TargetY = (int)(cosf(t * 3)*100.0f);
-				m_InputData[g_Config.m_ClDummy].m_Fire = ((int)(t*10));
+				//m_InputData[g_Config.m_ClDummy].m_Fire = ((int)(t*10));
 				m_InputData[g_Config.m_ClDummy].m_Direction = 0;
 				m_InputData[g_Config.m_ClDummy].m_Jump = 0;
 				DoJump();
@@ -342,7 +342,6 @@ int CControls::SnapInput(int *pData)
 				if (GameClient()->m_Snap.m_pLocalCharacter->m_X < 128 * 32) //red base
 				{
 					m_InputData[g_Config.m_ClDummy].m_Direction = 1;
-					//GameClient()->SendKill(g_Config.m_ClDummy);
 				}
 				if (GameClient()->m_Snap.m_pLocalCharacter->m_X > 170 * 32) //blue base
 				{
@@ -362,6 +361,11 @@ int CControls::SnapInput(int *pData)
 				if (GameClient()->m_Snap.m_pLocalCharacter->m_VelX < 0.5f)
 				{
 					StartJump(50, 100);
+				}
+
+				if (GameClient()->m_Snap.m_pLocalCharacter->m_Y > 90 * 32)
+				{
+					GameClient()->SendKill(g_Config.m_ClDummy);
 				}
 			}
 			else if (g_Config.m_ClMoveBot == 2) //test aimbot
