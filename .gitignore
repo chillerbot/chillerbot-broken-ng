@@ -21,6 +21,9 @@ packetgen*
 teeworlds*
 teeworlds_srv*
 chillerbot-ng
+chillerbot-ng_x86
+chillerbot-ng_x86_64
+chillerbot-ng_x86_d
 serverlaunch_*
 tileset_border*
 twping*

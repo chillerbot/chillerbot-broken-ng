@@ -367,7 +367,6 @@ function build(settings)
 		notification_settings = client_settings:Copy()
 		notification_settings.cc.flags:Add("-x objective-c++")
 		client_notification = Compile(notification_settings, "src/osx/notification.m")
-		client_osxlaunch = Compile(client_settings, "src/osxlaunch/client.m")
 		server_osxlaunch = Compile(launcher_settings, "src/osxlaunch/server.m")
 	end
 
