@@ -5,9 +5,6 @@ datasrc/__pycache__
 datasrc/*.pyc
 objs
 src/game/generated
-SDL.dll
-SDL2.dll
-freetype.dll
 servers.cfg
 
 crapnet*
@@ -54,6 +51,5 @@ bam.exe
 .settings
 *.opensdf
 *.pyc
-*.dll
 
 DDNet*
