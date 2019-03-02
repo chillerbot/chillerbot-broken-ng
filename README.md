@@ -1,5 +1,9 @@
-# chillerbot-ng
-DDNet based teeworlds client without graphics
+# chillerbot-bw
+
+ChillerBot BamWindows maintained by ChillerDragon.
+
+
+DDNet (bam) based teeworlds client without graphics only working on windows ._.
 
 # Bugs
 
